@@ -1,4 +1,5 @@
 using AgroERP.Data;
+using AgroERP.Data.Seed;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -48,5 +49,9 @@ app.MapControllerRoute(
 
 app.MapRazorPages()
    .WithStaticAssets();
-
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await PlanCuentaSeed.EjecutarAsync(db);
+}
 app.Run();

@@ -37,13 +37,19 @@ public static class Cuentas
 {
     public const string Mercaderias       = "2011";
     public const string MaterialesAux     = "2511"; // agroquímicos
-    public const string Envases           = "2531"; // jabas
+    public const string Envases = "2611"; // jabas
     public const string ProductoTerminado = "2111";
     public const string IgvPorPagar       = "4011";
     public const string FacturasPorPagar  = "4212";
     public const string FacturasPorCobrar = "1212";
     public const string VentasProductos   = "7011";
-    public const string CostoVentas       = "6911";
+    public const string CostoVentas = "6921";
     public const string MermasGasto       = "6598";
-    public const string FletesGasto       = "6324";
+    public const string FletesGasto = "6311";
+}
+
+public static class TiposCuenta
+{
+    public const string Activo = "Activo", Pasivo = "Pasivo", Patrimonio = "Patrimonio",
+                        Ingreso = "Ingreso", Gasto = "Gasto";
 }

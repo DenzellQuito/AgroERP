@@ -43,7 +43,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("GastosLogisticos");
+                    b.ToTable("GastosLogisticos", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.BI_Gestion.IndicadorKPI", b =>
@@ -68,7 +68,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("IndicadoresKPI");
+                    b.ToTable("IndicadoresKPI", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.BI_Gestion.PlanAccionMejora", b =>
@@ -97,7 +97,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("IndicadorId");
 
-                    b.ToTable("PlanesAccionMejora");
+                    b.ToTable("PlanesAccionMejora", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.AjusteInventario", b =>
@@ -139,7 +139,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("ZonaUbicacionId");
 
-                    b.ToTable("AjustesInventario");
+                    b.ToTable("AjustesInventario", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.Almacen", b =>
@@ -160,7 +160,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Almacenes");
+                    b.ToTable("Almacenes", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.InspeccionCalidad", b =>
@@ -188,7 +188,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("LoteId");
 
-                    b.ToTable("InspeccionesCalidad");
+                    b.ToTable("InspeccionesCalidad", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.InventarioExistencia", b =>
@@ -219,7 +219,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("ZonaUbicacionId");
 
-                    b.ToTable("InventariosExistencia");
+                    b.ToTable("InventariosExistencia", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.Lote", b =>
@@ -248,7 +248,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("ArticuloId");
 
-                    b.ToTable("Lotes");
+                    b.ToTable("Lotes", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.MovimientoKardex", b =>
@@ -290,7 +290,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("ZonaOrigenId");
 
-                    b.ToTable("MovimientosKardex");
+                    b.ToTable("MovimientosKardex", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.RecepcionDetalle", b =>
@@ -330,7 +330,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("RecepcionId");
 
-                    b.ToTable("DetallesRecepcion");
+                    b.ToTable("DetallesRecepcion", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.RecepcionMercaderia", b =>
@@ -363,7 +363,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("OrdenCompraId");
 
-                    b.ToTable("RecepcionesMercaderia");
+                    b.ToTable("RecepcionesMercaderia", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.ReservaInventario", b =>
@@ -399,7 +399,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("ZonaUbicacionId");
 
-                    b.ToTable("ReservasInventario");
+                    b.ToTable("ReservasInventario", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.ZonaUbicacion", b =>
@@ -421,7 +421,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("AlmacenId");
 
-                    b.ToTable("ZonasUbicacion");
+                    b.ToTable("ZonasUbicacion", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Compras.CotizacionProveedor", b =>
@@ -454,7 +454,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("RequerimientoId");
 
-                    b.ToTable("CotizacionesProveedor");
+                    b.ToTable("CotizacionesProveedor", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Compras.OrdenCompra", b =>
@@ -483,7 +483,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("ProveedorId");
 
-                    b.ToTable("OrdenesCompra");
+                    b.ToTable("OrdenesCompra", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Compras.OrdenCompraDetalle", b =>
@@ -514,7 +514,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("OrdenCompraId");
 
-                    b.ToTable("DetallesOrdenCompra");
+                    b.ToTable("DetallesOrdenCompra", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Compras.RequerimientoCompra", b =>
@@ -538,7 +538,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("RequerimientosCompra");
+                    b.ToTable("RequerimientosCompra", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Compras.RequerimientoDetalle", b =>
@@ -570,7 +570,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("RequerimientoId");
 
-                    b.ToTable("DetallesRequerimiento");
+                    b.ToTable("DetallesRequerimiento", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Contabilidad.AsientoContable", b =>
@@ -601,7 +601,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AsientosContables");
+                    b.ToTable("AsientosContables", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Contabilidad.AsientoDetalle", b =>
@@ -632,7 +632,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("CuentaId");
 
-                    b.ToTable("DetallesAsiento");
+                    b.ToTable("DetallesAsiento", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Contabilidad.PlanCuenta", b =>
@@ -663,7 +663,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PlanCuentas");
+                    b.ToTable("PlanCuentas", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Distribucion.ComprobantePago", b =>
@@ -689,7 +689,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("PedidoVentaId");
 
-                    b.ToTable("ComprobantesPago");
+                    b.ToTable("ComprobantesPago", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Distribucion.DevolucionCliente", b =>
@@ -725,7 +725,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("PedidoVentaId");
 
-                    b.ToTable("DevolucionesCliente");
+                    b.ToTable("DevolucionesCliente", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Distribucion.GuiaRemisionRemitente", b =>
@@ -759,7 +759,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("PedidoVentaId");
 
-                    b.ToTable("GuiasRemisionRemitente");
+                    b.ToTable("GuiasRemisionRemitente", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Distribucion.NotaCredito", b =>
@@ -789,7 +789,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("DevolucionId");
 
-                    b.ToTable("NotaCredito");
+                    b.ToTable("NotaCredito", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Distribucion.OrdenPicking", b =>
@@ -811,7 +811,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("PedidoVentaId");
 
-                    b.ToTable("OrdenesPicking");
+                    b.ToTable("OrdenesPicking", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Distribucion.OrdenPickingDetalle", b =>
@@ -838,7 +838,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("OrdenPickingId");
 
-                    b.ToTable("DetallesOrdenPicking");
+                    b.ToTable("DetallesOrdenPicking", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Distribucion.PedidoVenta", b =>
@@ -873,7 +873,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("ClienteId");
 
-                    b.ToTable("PedidosVenta");
+                    b.ToTable("PedidosVenta", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Distribucion.PedidoVentaDetalle", b =>
@@ -904,7 +904,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("PedidoId");
 
-                    b.ToTable("DetallesPedidoVenta");
+                    b.ToTable("DetallesPedidoVenta", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.MRP_IA.CampaniaAgricola", b =>
@@ -932,7 +932,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("CampaniasAgricolas");
+                    b.ToTable("CampaniasAgricolas", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.MRP_IA.NecesidadMrp", b =>
@@ -963,7 +963,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("PronosticoId");
 
-                    b.ToTable("NecesidadesMrp");
+                    b.ToTable("NecesidadesMrp", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.MRP_IA.PronosticoDemanda", b =>
@@ -987,7 +987,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("CampaniaId");
 
-                    b.ToTable("PronosticosDemanda");
+                    b.ToTable("PronosticosDemanda", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.MRP_IA.RecetaAgricolaBOM", b =>
@@ -1017,7 +1017,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("ArticuloInsumoId");
 
-                    b.ToTable("RecetasAgricolasBOM");
+                    b.ToTable("RecetasAgricolasBOM", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Maestros.Articulo", b =>
@@ -1046,7 +1046,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Articulos");
+                    b.ToTable("Articulos", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Maestros.Cliente", b =>
@@ -1071,7 +1071,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Clientes");
+                    b.ToTable("Clientes", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Maestros.ParametroInventario", b =>
@@ -1097,7 +1097,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("ArticuloId");
 
-                    b.ToTable("ParametrosInventario");
+                    b.ToTable("ParametrosInventario", (string)null);
                 });
 
             modelBuilder.Entity("AgroERP.Models.Maestros.Proveedor", b =>
@@ -1121,7 +1121,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Proveedores");
+                    b.ToTable("Proveedores", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
