@@ -1,0 +1,168 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - AgroERP Logística</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <!-- Usamos Bootstrap Icons en lugar de FontAwesome para mantenerlo ligero -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <style>
+            /* Estilos exactos para replicar el Sidebar azul oscuro de la imagen image_76710b.jpg */
+            body {
+                background-color: #f4f7f6; /* Fondo gris claro para la zona de contenido */
+                overflow-x: hidden;
+            }
+
+            #sidebar {
+                min-width: 250px;
+                max-width: 250px;
+                min-height: 100vh;
+                background-color: #1a2a40; /* Azul oscuro corporativo similar al del profesor */
+                color: #ffffff;
+                transition: all 0.3s;
+            }
+
+                #sidebar .sidebar-header {
+                    padding: 20px;
+                    background: #121e2d; /* Tono ligeramente más oscuro para el logo */
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    border-bottom: 1px solid #2c3e50;
+                }
+
+                #sidebar ul.components {
+                    padding: 20px 0;
+                }
+
+                #sidebar ul li a {
+                    padding: 12px 20px;
+                    font-size: 0.95rem;
+                    display: block;
+                    color: #aeb9c5; /* Texto gris claro inactivo */
+                    text-decoration: none;
+                    transition: 0.2s;
+                    border-left: 4px solid transparent;
+                }
+
+                    #sidebar ul li a:hover, #sidebar ul li.active > a {
+                        color: #ffffff;
+                        background: #23354e; /* Fondo hover sutil */
+                        border-left: 4px solid #0d6efd; /* Borde azul de Bootstrap indicando 'activo' */
+                    }
+
+                    #sidebar ul li a i {
+                        margin-right: 12px;
+                        font-size: 1.1rem;
+                    }
+
+            /* Área de contenido principal a la derecha */
+            #content-area {
+                width: 100%;
+                padding: 0;
+            }
+
+            /* Navbar superior blanca */
+            .top-navbar {
+                background-color: #ffffff;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+                padding: 15px 25px;
+            }
+    </style>
+</head>
+<body class="d-flex">
+
+    <!-- BARRA LATERAL (SIDEBAR) -->
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <!-- Reemplaza con el ícono de tu tractor/camión -->
+            <i class="bi bi-truck fs-3"></i>
+            <div>
+                <h5 class="mb-0 fw-bold">AGRO ERP</h5>
+                <small class="text-white-50">Logística Integral</small>
+            </div>
+        </div>
+
+        <ul class="list-unstyled components">
+            <!-- Opción: Inicio / Dashboard -->
+            <li class="active">
+                <a href="/Home/Index"><i class="bi bi-house-door"></i> Inicio</a>
+            </li>
+
+            <li class="px-3 mt-3 mb-1 text-uppercase text-white-50" style="font-size: 0.75rem;">Módulos Logísticos</li>
+
+            <!-- 1. Planificación -->
+            <li>
+                <a href="/Planificacion/Index"><i class="bi bi-bar-chart-steps"></i> Planificación</a>
+            </li>
+
+            <!-- 2. Compras -->
+            <li>
+                <a href="/Compras/Index"><i class="bi bi-cart3"></i> Compras</a>
+            </li>
+
+            <!-- 3. Recepción y Calidad -->
+            <li>
+                <a href="/Calidad/Index"><i class="bi bi-clipboard-check"></i> Recepción y Calidad</a>
+            </li>
+
+            <!-- 4. Almacenes e Inventarios -->
+            <li>
+                <a href="/Almacen/Index"><i class="bi bi-box-seam"></i> Almacenes e Inventarios</a>
+            </li>
+
+            <!-- 5. Distribución y Entrega -->
+            <li>
+                <a href="/Distribucion/Index"><i class="bi bi-truck"></i> Distribución y Entrega</a>
+            </li>
+
+            <!-- 6. Control de Gestión -->
+            <li>
+                <a href="/BI_Gestion/Index"><i class="bi bi-graph-up-arrow"></i> Control de Gestión</a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- ÁREA DE CONTENIDO PRINCIPAL -->
+    <div id="content-area">
+
+        <!-- Barra superior blanca con info de usuario (Similar a image_76710b.jpg) -->
+        <div class="top-navbar d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-list fs-4 text-muted me-3" style="cursor: pointer;"></i>
+                <h4 class="mb-0 text-dark fw-bold" id="page-title">Control de Gestión Logística</h4>
+            </div>
+
+            <div class="d-flex align-items-center gap-4">
+                <!-- Filtros de Sede/Periodo (solo visuales para maquetación inicial) -->
+                <div class="d-none d-md-flex gap-3 text-muted small">
+                    <div><i class="bi bi-calendar3"></i> Octubre 2026</div>
+                    <div><i class="bi bi-geo-alt"></i> Sede: Todas</div>
+                </div>
+
+                <!-- Perfil de Usuario -->
+                <div class="d-flex align-items-center gap-2 border-start ps-3">
+                    <i class="bi bi-person-circle fs-4 text-primary"></i>
+                    <div class="lh-1">
+                        <span class="d-block fw-bold text-dark small">Denzell.Admin</span>
+                        <span class="text-muted" style="font-size: 0.7rem;">Gerencia</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AQUÍ SE INYECTAN LAS VISTAS DE TUS COMPAÑEROS (@RenderBody) -->
+        <div class="container-fluid p-4">
+            @RenderBody()
+        </div>
+
+    </div>
+
+    <!-- Scripts de Bootstrap y renderización de JS por vista -->
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>
