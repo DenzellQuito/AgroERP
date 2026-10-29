@@ -1,0 +1,28 @@
+
+# ASP.NET Core / .NET
+[Bb]in/
+[Oo]bj/
+[Aa]rtifacts/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Pruebas y registros
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.log
+
+# Paquetes generados
+*.nupkg
+*.snupkg
+
+# Archivos temporales de Windows
+Thumbs.db
+.DS_Store
+
+# Configuración local de desarrollo
+appsettings.Development.json
