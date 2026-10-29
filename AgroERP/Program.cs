@@ -1,4 +1,5 @@
 using AgroERP.Data;
+using AgroERP.Data.AccesoDatos;
 using AgroERP.Data.Seed;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +21,12 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied"; // Opcional, para cuando usemos roles
 });
 builder.Services.AddControllersWithViews();
-
+builder.Services.AddScoped<DAContabilidad>();
+builder.Services.AddScoped<DACompras>();
+builder.Services.AddScoped<DAAlmacen>();
+builder.Services.AddScoped<DACalidad>();
+builder.Services.AddScoped<DADistribucion>();
+builder.Services.AddScoped<DAPlanificacion>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
