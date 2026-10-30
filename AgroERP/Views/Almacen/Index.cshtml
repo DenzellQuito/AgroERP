@@ -1,5 +1,105 @@
-@{ ViewData["Title"] = "Almacen";
-	Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
+@model AgroERP.ViewModels.Almacen.AlmacenDashboardViewModel
+@{
+    ViewData["Title"] = "Almacenes e Inventarios";
+    Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
 }
-<h2>Módulo Almacen</h2>
-<p class="text-muted">En construcción. Responsable: Méndez</p>
+
+<style>
+    .alm-header{background:linear-gradient(120deg,#173b32,#26734e);color:#fff;border-radius:16px;padding:24px;margin-bottom:22px}
+    .alm-kpi{border:0;border-radius:14px;box-shadow:0 5px 18px rgba(20,40,30,.07);height:100%}
+    .alm-kpi .value{font-size:1.65rem;font-weight:750;color:#183d31}
+    .alm-section{border:0;border-radius:14px;box-shadow:0 4px 16px rgba(20,40,30,.06);margin-bottom:20px}
+    .alm-section .card-header{background:#fff;border-bottom:1px solid #edf1ee;font-weight:700;padding:16px 18px}
+    .table thead th{font-size:.78rem;text-transform:uppercase;letter-spacing:.03em;color:#65756d;background:#f6f9f7;white-space:nowrap}
+    .table td{vertical-align:middle;font-size:.9rem}
+    .alm-pill{background:#e8f4ed;color:#1b6942;padding:4px 9px;border-radius:30px;font-size:.76rem;font-weight:700}
+</style>
+
+<div class="alm-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div>
+        <div class="text-uppercase small opacity-75 mb-1">MP04 · MP04.P02 · MP04.P02.SP02</div>
+        <h2 class="fw-bold mb-1">Gestión de Almacenes e Inventarios</h2>
+        <div class="opacity-75">Trazabilidad de lotes, control de existencias, picking, traslados y mermas.</div>
+    </div>
+    <div class="text-end"><span class="badge bg-light text-success px-3 py-2"></span></div>
+</div>
+
+@if (TempData["Ok"] != null) { <div class="alert alert-success alert-dismissible fade show">@TempData["Ok"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div> }
+@if (TempData["Error"] != null) { <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div> }
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="card alm-kpi"><div class="card-body"><div class="text-muted small">Stock físico</div><div class="value">@Model.StockTotal.ToString("N2")</div><div class="small text-muted">Unidades registradas</div></div></div></div>
+    <div class="col-md-3"><div class="card alm-kpi"><div class="card-body"><div class="text-muted small">Stock reservado</div><div class="value">@Model.StockReservado.ToString("N2")</div><div class="small text-muted">Comprometido para pedidos</div></div></div></div>
+    <div class="col-md-3"><div class="card alm-kpi"><div class="card-body"><div class="text-muted small">Stock disponible</div><div class="value">@((Model.StockTotal-Model.StockReservado).ToString("N2"))</div><div class="small text-muted">Físico menos reservado</div></div></div></div>
+    <div class="col-md-3"><div class="card alm-kpi"><div class="card-body"><div class="text-muted small">Lotes por vencer</div><div class="value">@Model.LotesPorVencer</div><div class="small text-muted">Vencen en los próximos 30 días o ya vencidos</div></div></div></div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-6">
+        <div class="card alm-section h-100"><div class="card-header"><i class="bi bi-building me-2 text-success"></i>Registrar almacén</div><div class="card-body">
+            <form asp-action="CrearAlmacen" method="post" class="row g-2">
+                @Html.AntiForgeryToken()
+                <div class="col-md-7"><label class="form-label">Nombre</label><input name="Nombre" class="form-control" required maxlength="120" placeholder="Ej. Almacén de Insumos" /></div>
+                <div class="col-md-5"><label class="form-label">Tipo</label><select name="Tipo" class="form-select"><option value="Insumos">Insumos</option><option value="AcopioFresa">Acopio de fresa</option></select></div>
+                <div class="col-12 text-end"><button class="btn btn-success"><i class="bi bi-plus-lg me-1"></i>Registrar almacén</button></div>
+            </form>
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card alm-section h-100"><div class="card-header"><i class="bi bi-geo-alt me-2 text-success"></i>Registrar zona / ubicación</div><div class="card-body">
+            <form asp-action="CrearZona" method="post" class="row g-2">
+                @Html.AntiForgeryToken()
+                <div class="col-md-7"><label class="form-label">Almacén</label><select name="AlmacenId" class="form-select" required><option value="">Seleccionar...</option>@foreach(var a in Model.Almacenes){<option value="@a.Id">@a.Nombre</option>}</select></div>
+                <div class="col-md-5"><label class="form-label">Código ubicación</label><input name="CodigoUbicacion" class="form-control" required placeholder="ZN-01" maxlength="40" /></div>
+                <div class="col-12 text-end"><button class="btn btn-success" @(Model.Almacenes.Count==0?"disabled":null)><i class="bi bi-plus-lg me-1"></i>Registrar ubicación</button></div>
+            </form>
+        </div></div>
+    </div>
+</div>
+
+<div class="card alm-section">
+    <div class="card-header d-flex justify-content-between"><span><i class="bi bi-boxes me-2 text-success"></i>Inventario por lote y ubicación</span><span class="alm-pill">FIFO / FEFO</span></div>
+    <div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Artículo</th><th>Lote</th><th>Vencimiento</th><th>Estado calidad</th><th>Almacén / Zona</th><th class="text-end">Físico</th><th class="text-end">Reservado</th><th class="text-end">Disponible</th></tr></thead><tbody>
+    @if(Model.Existencias.Count==0){<tr><td colspan="8" class="text-center text-muted py-4">No hay existencias registradas todavía. Los ingresos se registran desde Recepción y Calidad.</td></tr>}
+    @foreach(var x in Model.Existencias){<tr><td class="fw-semibold">@x.Articulo</td><td>@x.NumeroLote</td><td>@x.FechaVencimiento.ToString("dd/MM/yyyy")</td><td><span class="alm-pill">@x.EstadoCalidad</span></td><td>@x.Almacen <span class="text-muted">/ @x.Zona</span></td><td class="text-end">@x.CantidadFisica.ToString("N2")</td><td class="text-end">@x.CantidadReservada.ToString("N2")</td><td class="text-end fw-bold">@x.Disponible.ToString("N2")</td></tr>}
+    </tbody></table></div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card alm-section"><div class="card-header"><i class="bi bi-arrow-left-right me-2 text-success"></i>Traslado entre ubicaciones</div><div class="card-body">
+            <form asp-action="Trasladar" method="post" class="row g-2">
+                @Html.AntiForgeryToken()
+                <div class="col-md-6"><label class="form-label">Lote</label><select name="LoteId" class="form-select" required><option value="">Seleccionar lote...</option>@foreach(var l in Model.Existencias.GroupBy(x=>x.LoteId).Select(g=>g.First())){<option value="@l.LoteId">@l.Articulo - @l.NumeroLote</option>}</select></div>
+                <div class="col-md-6"><label class="form-label">Cantidad</label><input name="Cantidad" type="number" min="0.0001" step="0.0001" class="form-control" required /></div>
+                <div class="col-md-6"><label class="form-label">Zona origen</label><select name="ZonaOrigenId" class="form-select" required><option value="">Seleccionar...</option>@foreach(var z in Model.Zonas){<option value="@z.Id">@z.Almacen / @z.Codigo</option>}</select></div>
+                <div class="col-md-6"><label class="form-label">Zona destino</label><select name="ZonaDestinoId" class="form-select" required><option value="">Seleccionar...</option>@foreach(var z in Model.Zonas){<option value="@z.Id">@z.Almacen / @z.Codigo</option>}</select></div>
+                <div class="col-12"><label class="form-label">Referencia</label><input name="Referencia" class="form-control" value="Traslado interno" maxlength="100" /></div>
+                <div class="col-12 text-end"><button class="btn btn-outline-success" @(Model.Existencias.Count==0||Model.Zonas.Count<2?"disabled":null)>Registrar traslado</button></div>
+            </form>
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card alm-section"><div class="card-header"><i class="bi bi-exclamation-triangle me-2 text-warning"></i>Registrar merma / ajuste negativo</div><div class="card-body">
+            <form asp-action="RegistrarMerma" method="post" class="row g-2">
+                @Html.AntiForgeryToken()
+                <div class="col-md-6"><label class="form-label">Lote</label><select name="LoteId" class="form-select" required><option value="">Seleccionar...</option>@foreach(var l in Model.Existencias.GroupBy(x=>x.LoteId).Select(g=>g.First())){<option value="@l.LoteId">@l.Articulo - @l.NumeroLote</option>}</select></div>
+                <div class="col-md-6"><label class="form-label">Zona</label><select name="ZonaId" class="form-select" required><option value="">Seleccionar...</option>@foreach(var z in Model.Zonas){<option value="@z.Id">@z.Almacen / @z.Codigo</option>}</select></div>
+                <div class="col-md-6"><label class="form-label">Cantidad</label><input name="Cantidad" type="number" min="0.0001" step="0.0001" class="form-control" required /></div>
+                <div class="col-md-6"><label class="form-label">Costo unitario (S/)</label><input name="CostoUnitario" type="number" min="0" step="0.0001" class="form-control" required /></div>
+                <div class="col-12"><label class="form-label">Motivo</label><input name="Motivo" class="form-control" required maxlength="250" placeholder="Pudrición, daño, rotura..." /></div>
+                <div class="col-12 text-end"><button class="btn btn-warning" @(Model.Existencias.Count==0?"disabled":null)>Registrar merma y asiento</button></div>
+            </form>
+        </div></div>
+    </div>
+</div>
+
+<div class="card alm-section"><div class="card-header"><i class="bi bi-list-check me-2 text-success"></i>Órdenes de picking recientes</div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Orden</th><th>Pedido</th><th>Operario</th><th>Detalles</th><th class="text-end">Cantidad preparada</th></tr></thead><tbody>
+@if(Model.OrdenesPicking.Count==0){<tr><td colspan="5" class="text-center text-muted py-3">No hay órdenes de picking registradas.</td></tr>}
+@foreach(var p in Model.OrdenesPicking){<tr><td>#@p.Id</td><td>#@p.PedidoId</td><td>@p.OperarioId</td><td>@p.Detalles</td><td class="text-end">@p.CantidadTotal.ToString("N2")</td></tr>}
+</tbody></table></div></div>
+
+<div class="card alm-section"><div class="card-header"><i class="bi bi-journal-text me-2 text-success"></i>Kardex · últimos 200 movimientos</div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Fecha</th><th>Artículo</th><th>Lote</th><th>Movimiento</th><th class="text-end">Cantidad</th><th>Origen</th><th>Destino</th><th>Referencia</th></tr></thead><tbody>
+@if(Model.Movimientos.Count==0){<tr><td colspan="8" class="text-center text-muted py-3">Todavía no hay movimientos.</td></tr>}
+@foreach(var m in Model.Movimientos){<tr><td>@m.Fecha.ToString("dd/MM/yyyy HH:mm")</td><td>@m.Articulo</td><td>@m.Lote</td><td>@m.Tipo</td><td class="text-end">@m.Cantidad.ToString("N2")</td><td>@(m.Origen??"—")</td><td>@(m.Destino??"—")</td><td>@(m.Referencia??"—")</td></tr>}
+</tbody></table></div></div>
