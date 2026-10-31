@@ -1,0 +1,13 @@
+@model AgroERP.ViewModels.BI.IndicadorVM
+@{ Layout = "~/Views/Shared/_LayoutLogistica.cshtml"; ViewData["Title"] = Model.Id == 0 ? "Nuevo indicador" : "Editar indicador"; }
+<h2>@ViewData["Title"]</h2>
+<form asp-action="Guardar" method="post" class="col-md-6">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="mb-3"><label asp-for="NombreMetrica" class="form-label"></label>
+        <select asp-for="NombreMetrica" asp-items="Model.Nombres" class="form-select"></select></div>
+    <div class="mb-3"><label asp-for="MetaObjetivo" class="form-label"></label><input asp-for="MetaObjetivo" class="form-control" /><span asp-validation-for="MetaObjetivo" class="text-danger"></span></div>
+    <div class="mb-3"><label asp-for="ToleranciaAlarma" class="form-label"></label><input asp-for="ToleranciaAlarma" class="form-control" /><span asp-validation-for="ToleranciaAlarma" class="text-danger"></span></div>
+    <button class="btn btn-success">Guardar</button>
+    <a asp-action="Index" class="btn btn-link">Cancelar</a>
+</form>

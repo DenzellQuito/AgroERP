@@ -63,6 +63,10 @@ Las tablas están en el esquema **`dbo`** y su nombre es el del `DbSet` (en plur
    - Reserva: `Activa` `Consumida` `Liberada`
    - Pedido: `Pendiente` `Picking` `Empacado` `EnRuta` `Entregado`
    - PlanAccion: `EnProgreso` `Completado`
+   - MovimientoKardex.TipoMovimiento: `Ingreso` `Salida` `Traslado` `Merma` `Ajuste`
+   - AjusteInventario.TipoAjuste: `Merma` `ConteoPositivo` `ConteoNegativo` (todo conteo debe contener la palabra "Conteo")
+   - Entrega de pedidos: al entregar, Díaz debe llenar `PedidoVenta.FechaEntregaReal` (el OTIF solo cuenta pedidos con esa fecha)
+   - Recepción: Lavado debe llenar `CantidadPedida` y `CantidadRecibida` en cada `DetalleRecepcion` (de ahí sale el cumplimiento de proveedores)
 
 ## 6. Catálogos (no insertes a mano)
 Artículos, campañas y recetas se cargan desde las pantallas `/Articulos`, `/Campanias` y `/Recetas`. Proveedores, clientes y almacenes los carga el dueño de cada módulo en su propia pantalla; mientras tanto, usa inserts en SQL para probar.

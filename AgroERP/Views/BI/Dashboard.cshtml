@@ -1,0 +1,112 @@
+@using System.Text.Json
+@model AgroERP.ViewModels.BI.DashboardVM
+@{
+    Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
+    ViewData["Title"] = "Dashboard de gestión";
+    var metaOtif = Model.Kpis.FirstOrDefault(k => k.Nombre == "OTIF")?.Meta;
+    var metaCosto = Model.Kpis.FirstOrDefault(k => k.Nombre == "Costo Logístico")?.Meta;
+}
+@functions {
+    string Clase(string s) => s switch
+    {
+        "Verde" => "bg-success",
+        "Amarillo" => "bg-warning text-dark",
+        "Rojo" => "bg-danger",
+        _ => "bg-secondary"
+    };
+    string Texto(string s) => s == "SinDatos" ? "Sin datos" : s;
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Dashboard de gestión logística</h2>
+    <form method="get" class="d-flex align-items-center gap-2">
+        <label class="mb-0">Período:</label>
+        <select name="dias" class="form-select form-select-sm" onchange="this.form.submit()">
+            @foreach (var d in new[] { 30, 90, 180, 365 })
+            {
+                <option value="@d" selected="@(d == Model.Dias)">Últimos @d días</option>
+            }
+        </select>
+    </form>
+</div>
+
+<div class="row g-3 mb-4">
+@foreach (var k in Model.Kpis)
+{
+    <div class="col-md-4 col-lg-2">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="small text-muted">@k.Nombre</div>
+                <div class="fs-3 fw-bold">@(k.Valor?.ToString("N1") ?? "—") <span class="fs-6">@k.Unidad</span></div>
+                <div class="small text-muted">Meta: @(k.MayorEsMejor ? "≥" : "≤") @k.Meta.ToString("N1")</div>
+                <span class="badge @Clase(k.Semaforo) mt-2">@Texto(k.Semaforo)</span>
+            </div>
+        </div>
+    </div>
+}
+</div>
+@if (!Model.Kpis.Any()) { <div class="alert alert-info">No hay indicadores definidos. Cárgalos en <a asp-controller="Indicadores" asp-action="Index">Indicadores</a>.</div> }
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card"><div class="card-body">
+            <h6>OTIF mensual (%)</h6>
+            @if (Model.OtifMensual.Any(p => p.Valor != null)) { <canvas id="chOtif" height="140"></canvas> }
+            else { <p class="text-muted mb-0">Sin datos: aún no hay pedidos entregados.</p> }
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card"><div class="card-body">
+            <h6>Costo logístico mensual (% de ventas)</h6>
+            @if (Model.CostoMensual.Any(p => p.Valor != null)) { <canvas id="chCosto" height="140"></canvas> }
+            else { <p class="text-muted mb-0">Sin datos: faltan gastos logísticos o comprobantes de pago.</p> }
+        </div></div>
+    </div>
+    <div class="col-12">
+        <div class="card"><div class="card-body">
+            <h6>Pareto de mermas por artículo (últimos @Model.Dias días)</h6>
+            @if (Model.Pareto.Any()) { <canvas id="chPareto" height="90"></canvas> }
+            else { <p class="text-muted mb-0">Sin datos: aún no hay mermas registradas.</p> }
+        </div></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+    const otif = @Html.Raw(JsonSerializer.Serialize(Model.OtifMensual));
+    const costo = @Html.Raw(JsonSerializer.Serialize(Model.CostoMensual));
+    const pareto = @Html.Raw(JsonSerializer.Serialize(Model.Pareto));
+    const metaOtif = @Html.Raw(JsonSerializer.Serialize(metaOtif));
+    const metaCosto = @Html.Raw(JsonSerializer.Serialize(metaCosto));
+
+    function serieMeta(arr, meta) { return meta == null ? [] : arr.map(() => meta); }
+
+    const elOtif = document.getElementById('chOtif');
+    if (elOtif) new Chart(elOtif, {
+        type: 'line',
+        data: { labels: otif.map(p => p.Mes), datasets: [
+            { label: 'OTIF %', data: otif.map(p => p.Valor), borderColor: '#198754', tension: .25, spanGaps: true },
+            { label: 'Meta', data: serieMeta(otif, metaOtif), borderColor: '#6c757d', borderDash: [6, 4], pointRadius: 0 }
+        ]},
+        options: { scales: { y: { min: 0, max: 100 } } }
+    });
+
+    const elCosto = document.getElementById('chCosto');
+    if (elCosto) new Chart(elCosto, {
+        type: 'bar',
+        data: { labels: costo.map(p => p.Mes), datasets: [
+            { label: 'Costo logístico %', data: costo.map(p => p.Valor), backgroundColor: '#0d6efd' },
+            { type: 'line', label: 'Meta (máx.)', data: serieMeta(costo, metaCosto), borderColor: '#dc3545', borderDash: [6, 4], pointRadius: 0 }
+        ]},
+        options: { scales: { y: { beginAtZero: true } } }
+    });
+
+    const elPareto = document.getElementById('chPareto');
+    if (elPareto) new Chart(elPareto, {
+        type: 'bar',
+        data: { labels: pareto.map(p => p.Articulo), datasets: [
+            { label: 'Merma (unidades)', data: pareto.map(p => p.Total), backgroundColor: '#fd7e14', yAxisID: 'y' },
+            { type: 'line', label: '% acumulado', data: pareto.map(p => p.AcumuladoPct), borderColor: '#212529', yAxisID: 'y1' }
+        ]},
+        options: { scales: { y: { beginAtZero: true }, y1: { position: 'right', min: 0, max: 100, grid: { drawOnChartArea: false } } } }
+    });
+</script>

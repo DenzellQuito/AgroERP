@@ -1,0 +1,27 @@
+@model List<AgroERP.ViewModels.BI.IndicadorVM>
+@{ Layout = "~/Views/Shared/_LayoutLogistica.cshtml"; ViewData["Title"] = "Indicadores (KPI)"; }
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Indicadores (KPI)</h2>
+    <a asp-action="Crear" class="btn btn-success">Nuevo indicador</a>
+</div>
+@if (TempData["Ok"] != null) { <div class="alert alert-success">@TempData["Ok"]</div> }
+@if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+<table class="table">
+    <thead><tr><th>Indicador</th><th>Meta objetivo</th><th>Tolerancia de alarma</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var i in Model)
+    {
+        <tr>
+            <td>@i.NombreMetrica</td><td>@i.MetaObjetivo.ToString("N2")</td><td>@i.ToleranciaAlarma.ToString("N2")</td>
+            <td class="text-end">
+                <a asp-action="Editar" asp-route-id="@i.Id" class="btn btn-outline-primary btn-sm">Editar</a>
+                <form asp-action="Eliminar" method="post" class="d-inline" onsubmit="return confirm('¿Eliminar este indicador?');">
+                    <input type="hidden" name="id" value="@i.Id" />
+                    <button class="btn btn-outline-danger btn-sm">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+<p class="text-muted small">Semáforo: en indicadores donde más es mejor (OTIF, cumplimiento, rotación, exactitud) es verde si el valor ≥ meta, amarillo si está dentro de la tolerancia y rojo si no. En costo logístico y merma (menos es mejor) es al revés.</p>
