@@ -27,6 +27,7 @@ Thumbs.db
 # Configuración local de desarrollo
 appsettings.Development.json
 
-   python-forecast/venv/
-   __pycache__/
-   *.pyc
+# Python
+python-forecast/venv/
+__pycache__/
+*.pyc
