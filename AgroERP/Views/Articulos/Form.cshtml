@@ -1,0 +1,18 @@
+@model AgroERP.ViewModels.Planificacion.ArticuloVM
+@{ Layout = "~/Views/Shared/_LayoutLogistica.cshtml"; ViewData["Title"] = Model.Id == 0 ? "Nuevo artículo" : "Editar artículo"; }
+<h2>@ViewData["Title"]</h2>
+<form asp-action="Guardar" method="post" class="col-md-6">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="mb-3"><label asp-for="Codigo" class="form-label"></label><input asp-for="Codigo" class="form-control" /><span asp-validation-for="Codigo" class="text-danger"></span></div>
+    <div class="mb-3"><label asp-for="Nombre" class="form-label"></label><input asp-for="Nombre" class="form-control" /><span asp-validation-for="Nombre" class="text-danger"></span></div>
+    <div class="mb-3"><label asp-for="Tipo" class="form-label"></label>
+        <select asp-for="Tipo" class="form-select">
+            <option value="Fresa">Fresa</option><option value="Insumo">Insumo</option><option value="Empaque">Empaque</option>
+        </select></div>
+    <div class="mb-3"><label asp-for="UnidadMedida" class="form-label"></label><input asp-for="UnidadMedida" class="form-control" /><span asp-validation-for="UnidadMedida" class="text-danger"></span></div>
+    <div class="mb-3"><label asp-for="StockSeguridad" class="form-label"></label><input asp-for="StockSeguridad" class="form-control" /><span asp-validation-for="StockSeguridad" class="text-danger"></span></div>
+    <div class="mb-3"><label asp-for="LoteEconomico" class="form-label"></label><input asp-for="LoteEconomico" class="form-control" /><span asp-validation-for="LoteEconomico" class="text-danger"></span></div>
+    <button class="btn btn-success">Guardar</button>
+    <a asp-action="Index" class="btn btn-link">Cancelar</a>
+</form>

@@ -1,0 +1,27 @@
+@model List<AgroERP.ViewModels.Planificacion.ArticuloVM>
+@{ Layout = "~/Views/Shared/_LayoutLogistica.cshtml"; ViewData["Title"] = "Artículos"; }
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Artículos</h2>
+    <a asp-action="Crear" class="btn btn-success">Nuevo artículo</a>
+</div>
+@if (TempData["Ok"] != null) { <div class="alert alert-success">@TempData["Ok"]</div> }
+@if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+<table class="table">
+    <thead><tr><th>Código</th><th>Nombre</th><th>Tipo</th><th>Unidad</th><th>Stock seguridad</th><th>Lote económico</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var a in Model)
+    {
+        <tr>
+            <td>@a.Codigo</td><td>@a.Nombre</td><td>@a.Tipo</td><td>@a.UnidadMedida</td>
+            <td>@a.StockSeguridad.ToString("N2")</td><td>@a.LoteEconomico.ToString("N2")</td>
+            <td class="text-end">
+                <a asp-action="Editar" asp-route-id="@a.Id" class="btn btn-outline-primary btn-sm">Editar</a>
+                <form asp-action="Eliminar" method="post" class="d-inline" onsubmit="return confirm('¿Eliminar este artículo?');">
+                    <input type="hidden" name="id" value="@a.Id" />
+                    <button class="btn btn-outline-danger btn-sm">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

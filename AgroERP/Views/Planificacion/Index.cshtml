@@ -1,5 +1,26 @@
-@{ ViewData["Title"] = "Planificacion"; 
-	Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
+@model List<AgroERP.ViewModels.Planificacion.CampaniaItemVM>
+@{
+    Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
+    ViewData["Title"] = "Planificación (MRP)";
 }
-<h2>Módulo Planificacion</h2>
-<p class="text-muted">En construcción. Responsable: Quito</p>
+<h2>Planificación de la demanda (MRP)</h2>
+@if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+@if (TempData["Ok"] != null) { <div class="alert alert-success">@TempData["Ok"]</div> }
+<table class="table">
+    <thead><tr><th>Campaña</th><th>Hectáreas</th><th>Mes</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var c in Model)
+    {
+        <tr>
+            <td>@c.Nombre</td><td>@c.HectareasActivas</td><td>@c.MesProyectado</td><td>@c.Estado</td>
+            <td>
+                <form asp-action="Calcular" method="post">
+                    <input type="hidden" name="campaniaId" value="@c.Id" />
+                    <button class="btn btn-success btn-sm">Calcular pronóstico y MRP</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+@if (!Model.Any()) { <p class="text-muted">No hay campañas registradas.</p> }
