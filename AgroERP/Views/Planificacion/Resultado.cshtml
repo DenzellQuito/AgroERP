@@ -1,0 +1,28 @@
+@model AgroERP.ViewModels.Planificacion.ResultadoMrpVM
+@{
+    Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
+    ViewData["Title"] = "Resultado MRP";
+}
+<h2>Resultado MRP – @Model.Campania</h2>
+@if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+@if (TempData["Ok"] != null) { <div class="alert alert-success">@TempData["Ok"]</div> }
+<p><strong>Cosecha estimada (IA):</strong> @Model.VolumenCosechaEstimado.ToString("N0") jabas
+   <span class="text-muted">· calculado @Model.FechaCalculo.ToString("dd/MM/yyyy HH:mm")</span></p>
+<table class="table">
+    <thead><tr><th>Insumo</th><th>Cantidad neta sugerida</th><th>Estado</th></tr></thead>
+    <tbody>
+    @foreach (var n in Model.Necesidades)
+    {
+        <tr><td>@n.Articulo</td><td>@n.CantidadNetaSugerida.ToString("N2")</td><td>@n.Estado</td></tr>
+    }
+    </tbody>
+</table>
+@if (!Model.Necesidades.Any()) { <p class="text-muted">El stock actual cubre toda la necesidad.</p> }
+else
+{
+    <form asp-action="EnviarACompras" method="post">
+        <input type="hidden" name="pronosticoId" value="@Model.PronosticoId" />
+        <button class="btn btn-primary">Enviar necesidades a Compras</button>
+    </form>
+}
+<a asp-action="Index" class="btn btn-link">Volver</a>

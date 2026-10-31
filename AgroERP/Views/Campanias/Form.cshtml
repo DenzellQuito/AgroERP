@@ -1,0 +1,16 @@
+@model AgroERP.ViewModels.Planificacion.CampaniaVM
+@{ Layout = "~/Views/Shared/_LayoutLogistica.cshtml"; ViewData["Title"] = Model.Id == 0 ? "Nueva campaña" : "Editar campaña"; }
+<h2>@ViewData["Title"]</h2>
+<form asp-action="Guardar" method="post" class="col-md-6">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="mb-3"><label asp-for="Nombre" class="form-label"></label><input asp-for="Nombre" class="form-control" /><span asp-validation-for="Nombre" class="text-danger"></span></div>
+    <div class="mb-3"><label asp-for="Estado" class="form-label"></label>
+        <select asp-for="Estado" class="form-select">
+            <option value="Planificada">Planificada</option><option value="Activa">Activa</option><option value="Cerrada">Cerrada</option>
+        </select></div>
+    <div class="mb-3"><label asp-for="HectareasActivas" class="form-label"></label><input asp-for="HectareasActivas" class="form-control" /><span asp-validation-for="HectareasActivas" class="text-danger"></span></div>
+    <div class="mb-3"><label asp-for="MesProyectado" class="form-label"></label><input asp-for="MesProyectado" class="form-control" /><span asp-validation-for="MesProyectado" class="text-danger"></span></div>
+    <button class="btn btn-success">Guardar</button>
+    <a asp-action="Index" class="btn btn-link">Cancelar</a>
+</form>

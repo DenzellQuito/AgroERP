@@ -1,0 +1,26 @@
+@model List<AgroERP.ViewModels.Planificacion.RecetaVM>
+@{ Layout = "~/Views/Shared/_LayoutLogistica.cshtml"; ViewData["Title"] = "Recetas (BOM)"; }
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Recetas agrícolas (BOM)</h2>
+    <a asp-action="Crear" class="btn btn-success">Nueva receta</a>
+</div>
+@if (TempData["Ok"] != null) { <div class="alert alert-success">@TempData["Ok"]</div> }
+@if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+<table class="table">
+    <thead><tr><th>Mes</th><th>Producto final</th><th>Insumo / empaque</th><th>Cantidad por jaba</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var r in Model)
+    {
+        <tr>
+            <td>@r.MesAplicacion</td><td>@r.ArticuloFinal</td><td>@r.ArticuloInsumo</td><td>@r.CantidadPorJaba.ToString("N4")</td>
+            <td class="text-end">
+                <a asp-action="Editar" asp-route-id="@r.Id" class="btn btn-outline-primary btn-sm">Editar</a>
+                <form asp-action="Eliminar" method="post" class="d-inline" onsubmit="return confirm('¿Eliminar esta receta?');">
+                    <input type="hidden" name="id" value="@r.Id" />
+                    <button class="btn btn-outline-danger btn-sm">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

@@ -26,7 +26,12 @@ builder.Services.AddScoped<DACompras>();
 builder.Services.AddScoped<DAAlmacen>();
 builder.Services.AddScoped<DACalidad>();
 builder.Services.AddScoped<DADistribucion>();
-builder.Services.AddScoped<DAPlanificacion>();
+builder.Services.AddScoped<DAMaestros>();
+builder.Services.AddHttpClient<DAPlanificacion>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["Forecast:BaseUrl"] ?? "http://localhost:8000");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -59,5 +64,20 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await PlanCuentaSeed.EjecutarAsync(db);
+
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+    const string email = "admin@agroerp.com";
+    if (await userManager.FindByEmailAsync(email) == null)
+    {
+        var result = await userManager.CreateAsync(
+            new IdentityUser { UserName = email, Email = email, EmailConfirmed = true },
+            "Admin123!");
+
+        if (!result.Succeeded)
+            Console.WriteLine("ERROR SEED ADMIN: " +
+                string.Join(" | ", result.Errors.Select(e => e.Description)));
+        else
+            Console.WriteLine("Seed: usuario admin creado.");
+    }
 }
 app.Run();

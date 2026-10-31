@@ -1,0 +1,5 @@
+1) cd python-forecast
+2) python -m venv venv ; venv\Scripts\activate
+3) pip install -r requirements.txt
+4) uvicorn app:app --port 8000
+Prueba: http://localhost:8000/health   y   http://localhost:8000/docs

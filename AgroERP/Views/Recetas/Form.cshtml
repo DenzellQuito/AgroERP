@@ -1,0 +1,15 @@
+@model AgroERP.ViewModels.Planificacion.RecetaVM
+@{ Layout = "~/Views/Shared/_LayoutLogistica.cshtml"; ViewData["Title"] = Model.Id == 0 ? "Nueva receta" : "Editar receta"; }
+<h2>@ViewData["Title"]</h2>
+<form asp-action="Guardar" method="post" class="col-md-6">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="mb-3"><label asp-for="ArticuloFinalId" class="form-label"></label>
+        <select asp-for="ArticuloFinalId" asp-items="Model.Articulos" class="form-select"></select></div>
+    <div class="mb-3"><label asp-for="ArticuloInsumoId" class="form-label"></label>
+        <select asp-for="ArticuloInsumoId" asp-items="Model.Articulos" class="form-select"></select></div>
+    <div class="mb-3"><label asp-for="MesAplicacion" class="form-label"></label><input asp-for="MesAplicacion" class="form-control" /><span asp-validation-for="MesAplicacion" class="text-danger"></span></div>
+    <div class="mb-3"><label asp-for="CantidadPorJaba" class="form-label"></label><input asp-for="CantidadPorJaba" class="form-control" /><span asp-validation-for="CantidadPorJaba" class="text-danger"></span></div>
+    <button class="btn btn-success">Guardar</button>
+    <a asp-action="Index" class="btn btn-link">Cancelar</a>
+</form>
