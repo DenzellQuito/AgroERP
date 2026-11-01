@@ -3,6 +3,7 @@ using AgroERP.Data.AccesoDatos;
 using AgroERP.Data.Seed;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +34,17 @@ builder.Services.AddHttpClient<DAPlanificacion>(client =>
     client.BaseAddress = new Uri(builder.Configuration["Forecast:BaseUrl"] ?? "http://localhost:8000");
     client.Timeout = TimeSpan.FromSeconds(30);
 });
+
+var ci = new CultureInfo("es-PE");
+ci.NumberFormat.NumberDecimalSeparator = ".";
+ci.NumberFormat.NumberGroupSeparator = ",";
+ci.NumberFormat.CurrencyDecimalSeparator = ".";
+ci.NumberFormat.CurrencyGroupSeparator = ",";
+ci.NumberFormat.PercentDecimalSeparator = ".";
+ci.NumberFormat.PercentGroupSeparator = ",";
+CultureInfo.DefaultThreadCurrentCulture = ci;
+CultureInfo.DefaultThreadCurrentUICulture = ci;
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
