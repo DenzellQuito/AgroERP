@@ -141,4 +141,89 @@ public class DACompras
         await _db.SaveChangesAsync(); // Operación interna de tu módulo (Regla 4)
         return proveedor.Id;
     }
+
+    // ===================== COTIZACIONES =====================
+    public async Task<AgroERP.Models.Compras.RequerimientoCompra?> ObtenerRequerimientoConCotizacionesAsync(int requerimientoId)
+    {
+        return await _db.Set<AgroERP.Models.Compras.RequerimientoCompra>()
+            .Include(r => r.Cotizaciones)
+            .ThenInclude(c => c.Proveedor)
+            .FirstOrDefaultAsync(r => r.Id == requerimientoId);
+    }
+
+    public async Task RegistrarCotizacionAsync(int requerimientoId, int proveedorId, decimal precio, int dias)
+    {
+        var cotizacion = new AgroERP.Models.Compras.CotizacionProveedor
+        {
+            RequerimientoId = requerimientoId,
+            ProveedorId = proveedorId,
+            PrecioOfertado = precio,
+            DiasEntrega = dias,
+            EsGanador = false // Inicia sin ser ganador
+        };
+        _db.Set<AgroERP.Models.Compras.CotizacionProveedor>().Add(cotizacion);
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task AdjudicarCotizacionAsync(int cotizacionId, int requerimientoId)
+    {
+        var cotizaciones = await _db.Set<AgroERP.Models.Compras.CotizacionProveedor>()
+            .Where(c => c.RequerimientoId == requerimientoId)
+            .ToListAsync();
+
+        foreach (var c in cotizaciones)
+        {
+            c.EsGanador = (c.Id == cotizacionId);
+        }
+
+        await _db.SaveChangesAsync();
+    }
+
+    // ===================== ÓRDENES DE COMPRA =====================
+    public async Task<int> GenerarOrdenDesdeCotizacionAsync(int requerimientoId)
+    {
+        var req = await _db.Set<AgroERP.Models.Compras.RequerimientoCompra>()
+            .Include(r => r.Detalles)
+            .Include(r => r.Cotizaciones)
+            .FirstOrDefaultAsync(r => r.Id == requerimientoId);
+
+        var ganadora = req!.Cotizaciones.FirstOrDefault(c => c.EsGanador);
+
+        var orden = new AgroERP.Models.Compras.OrdenCompra
+        {
+            ProveedorId = ganadora!.ProveedorId,
+            FechaEmision = DateTime.Now,
+            Total = ganadora.PrecioOfertado,
+            Estado = "Emitida", // Regla 8 de tu equipo: texto exacto
+            Detalles = req.Detalles.Select(d => new AgroERP.Models.Compras.OrdenCompraDetalle
+            {
+                ArticuloId = d.ArticuloId,
+                CantidadPedida = d.Cantidad,
+                PrecioUnitario = ganadora.PrecioOfertado / req.Detalles.Sum(x => x.Cantidad) // Prorrateo del precio total
+            }).ToList()
+        };
+
+        req.Estado = "Aprobado"; // Actualizamos el requerimiento inicial
+
+        _db.Set<AgroERP.Models.Compras.OrdenCompra>().Add(orden);
+        await _db.SaveChangesAsync();
+
+        return orden.Id;
+    }
+
+    public async Task<List<AgroERP.Models.Compras.OrdenCompra>> ObtenerOrdenesAsync()
+    {
+        return await _db.Set<AgroERP.Models.Compras.OrdenCompra>()
+            .Include(o => o.Proveedor)
+            .ToListAsync();
+    }
+
+    public async Task<AgroERP.Models.Compras.OrdenCompra?> ObtenerOrdenImpresionAsync(int id)
+    {
+        return await _db.Set<AgroERP.Models.Compras.OrdenCompra>()
+            .Include(o => o.Proveedor)
+            .Include(o => o.Detalles)
+            .ThenInclude(d => d.Articulo)
+            .FirstOrDefaultAsync(o => o.Id == id);
+    }
 }

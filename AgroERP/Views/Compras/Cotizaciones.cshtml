@@ -1,0 +1,112 @@
+﻿@model AgroERP.ViewModels.Compras.CotizacionIndexViewModel
+
+@{
+    ViewData["Title"] = "Cuadro de Cotizaciones";
+    Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Cotizaciones para REQ-@Model.RequerimientoId.ToString("D4")</h2>
+        <span class="badge bg-warning text-dark fs-6">@Model.Estado</span>
+    </div>
+
+    <div class="row">
+        <!-- Panel Izquierdo: Formulario de Registro -->
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white fw-bold">Registrar Oferta</div>
+                <div class="card-body">
+                    <form asp-action="AgregarCotizacion" method="post">
+                        <input type="hidden" name="requerimientoId" value="@Model.RequerimientoId" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Proveedor</label>
+                            <select name="proveedorId" class="form-select" required>
+                                <option value="">-- Seleccionar Proveedor --</option>
+                                @foreach (var prov in ViewBag.Proveedores)
+                                {
+                                    <option value="@prov.Id">@prov.RazonSocial</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Precio Total Ofertado (S/)</label>
+                            <input type="number" name="precio" class="form-control" step="0.01" min="0.1" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Días para Entrega</label>
+                            <input type="number" name="dias" class="form-control" min="1" required />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Guardar Oferta</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Derecho: Cuadro Comparativo -->
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light fw-bold">Ofertas Recibidas</div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>Proveedor</th>
+                                <th class="text-end">Precio Total</th>
+                                <th class="text-center">Entrega (días)</th>
+                                <th class="text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Ofertas.Any())
+                            {
+                                <tr><td colspan="4" class="text-center py-4">No hay cotizaciones registradas.</td></tr>
+                            }
+                            else
+                            {
+                                foreach (var oferta in Model.Ofertas)
+                                {
+                                    <tr>
+                                        <td class="fw-bold align-middle">@oferta.Proveedor</td>
+                                        <td class="text-end align-middle">S/ @oferta.Precio.ToString("0.00")</td>
+                                        <td class="text-center align-middle">@oferta.Dias</td>
+                                        <td class="text-center">
+                                            @if (oferta.EsGanador)
+                                            {
+                                                <span class="badge bg-success">Ganador</span>
+                                            }
+                                            else
+                                            {
+                                                <form asp-action="Adjudicar" method="post" class="d-inline">
+                                                    <input type="hidden" name="cotizacionId" value="@oferta.Id" />
+                                                    <input type="hidden" name="requerimientoId" value="@Model.RequerimientoId" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-success">Adjudicar</button>
+                                                </form>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4 d-flex">
+        <a href="@Url.Action("Details", new { id = Model.RequerimientoId })" class="btn btn-secondary me-2">Volver al Requerimiento</a>
+
+        @if (Model.Ofertas.Any(o => o.EsGanador))
+        {
+            <form asp-action="GenerarOrden" method="post">
+                <input type="hidden" name="requerimientoId" value="@Model.RequerimientoId" />
+                <button type="submit" class="btn btn-success">Generar Orden de Compra</button>
+            </form>
+        }
+    </div>
+</div>

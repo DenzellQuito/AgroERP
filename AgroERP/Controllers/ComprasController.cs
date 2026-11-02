@@ -120,4 +120,92 @@ public class ComprasController : Controller
 
         return RedirectToAction(nameof(Proveedores));
     }
+
+    [HttpGet]
+    public async Task<IActionResult> Cotizaciones(int id)
+    {
+        var req = await _da.ObtenerRequerimientoConCotizacionesAsync(id);
+        if (req == null) return NotFound();
+
+        ViewBag.Proveedores = await _da.ObtenerProveedoresAsync();
+
+        var viewModel = new CotizacionIndexViewModel
+        {
+            RequerimientoId = req.Id,
+            Estado = req.Estado,
+            Ofertas = req.Cotizaciones.Select(c => new OfertaViewModel
+            {
+                Id = c.Id,
+                Proveedor = c.Proveedor.RazonSocial,
+                Precio = c.PrecioOfertado,
+                Dias = c.DiasEntrega,
+                EsGanador = c.EsGanador
+            }).ToList()
+        };
+
+        return View(viewModel);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AgregarCotizacion(int requerimientoId, int proveedorId, decimal precio, int dias)
+    {
+        await _da.RegistrarCotizacionAsync(requerimientoId, proveedorId, precio, dias);
+        return RedirectToAction(nameof(Cotizaciones), new { id = requerimientoId });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Adjudicar(int cotizacionId, int requerimientoId)
+    {
+        await _da.AdjudicarCotizacionAsync(cotizacionId, requerimientoId);
+        return RedirectToAction(nameof(Cotizaciones), new { id = requerimientoId });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> GenerarOrden(int requerimientoId)
+    {
+        await _da.GenerarOrdenDesdeCotizacionAsync(requerimientoId);
+        return RedirectToAction(nameof(Ordenes));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Ordenes()
+    {
+        var ordenes = await _da.ObtenerOrdenesAsync();
+        var viewModel = ordenes.Select(o => new OrdenCompraViewModel
+        {
+            Id = o.Id,
+            Proveedor = o.Proveedor.RazonSocial,
+            FechaEmision = o.FechaEmision.ToString("dd/MM/yyyy HH:mm"),
+            Total = o.Total,
+            Estado = o.Estado
+        }).ToList();
+
+        return View(viewModel);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GenerarPdf(int id)
+    {
+        var orden = await _da.ObtenerOrdenImpresionAsync(id);
+        if (orden == null) return NotFound();
+
+        var viewModel = new OrdenCompraImpresionViewModel
+        {
+            Id = orden.Id,
+            FechaEmision = orden.FechaEmision.ToString("dd/MM/yyyy HH:mm"),
+            ProveedorRuc = orden.Proveedor.Ruc,
+            ProveedorRazonSocial = orden.Proveedor.RazonSocial,
+            Total = orden.Total,
+            Detalles = orden.Detalles.Select(d => new ItemImpresionViewModel
+            {
+                Codigo = d.Articulo.Codigo,
+                Descripcion = d.Articulo.Nombre,
+                Cantidad = d.CantidadPedida,
+                PrecioUnitario = d.PrecioUnitario,
+                Subtotal = d.CantidadPedida * d.PrecioUnitario
+            }).ToList()
+        };
+
+        return View(viewModel);
+    }
 }

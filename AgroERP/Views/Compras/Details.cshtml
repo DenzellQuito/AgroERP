@@ -46,6 +46,7 @@
 
     <div class="mt-4 d-flex">
         <a href="@Url.Action("Index")" class="btn btn-secondary me-2">Volver a la lista</a>
+        <a href="@Url.Action("Cotizaciones", new { id = Model.Id })" class="btn btn-info me-2">Ver Cotizaciones</a>
         @if (Model.Estado == "Borrador")
         {
             <form asp-action="EnviarAprobacion" method="post">

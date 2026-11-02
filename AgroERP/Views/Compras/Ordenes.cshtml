@@ -1,0 +1,45 @@
+﻿@model IEnumerable<AgroERP.ViewModels.Compras.OrdenCompraViewModel>
+
+@{
+    ViewData["Title"] = "Órdenes de Compra";
+    Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">Órdenes de Compra Emitidas</h2>
+
+    <table class="table table-striped shadow-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>Nro. Orden</th>
+                <th>Fecha Emisión</th>
+                <th>Proveedor</th>
+                <th>Total (S/)</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.Any())
+            {
+                <tr><td colspan="6" class="text-center">No hay órdenes generadas.</td></tr>
+            }
+            else
+            {
+                foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="fw-bold">OC-@item.Id.ToString("D4")</td>
+                        <td>@item.FechaEmision</td>
+                        <td>@item.Proveedor</td>
+                        <td class="text-end">S/ @item.Total.ToString("0.00")</td>
+                        <td><span class="badge bg-info text-dark">@item.Estado</span></td>
+                        <td>
+                            <a href="@Url.Action("GenerarPdf", new { id = item.Id })" target="_blank" class="btn btn-sm btn-danger">📄 PDF</a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
