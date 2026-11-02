@@ -48,7 +48,7 @@ Las tablas están en el esquema **`dbo`** y su nombre es el del `DbSet` (en plur
 1. **Lectura libre, escritura solo del dueño.** Puedes consultar cualquier tabla; solo modificas las tuyas. Para tocar una ajena, llama al método de su DAO (sección 7).
 2. **No tocar:** `ApplicationDbContext`, `Models/`, `_LayoutLogistica.cshtml`, `Program.cs`, `Migrations/`. Pídeselo a Quito.
 3. **Solo Quito ejecuta `Add-Migration`.** Los demás solo `Update-Database`. Después de cada merge a `main`, haz *Pull* y `Update-Database`.
-4. **Un solo `SaveChangesAsync` por operación.** Stock + estado + asiento se guardan juntos al final del flujo. Los métodos de contrato **no** llaman `SaveChanges`.
+4. Un solo SaveChangesAsync por operación. Stock + estado + asiento se guardan juntos al final del flujo. Los métodos de contrato no llaman SaveChanges, excepto los que devuelven un Id nuevo (DACompras.CrearRequerimientoDesdeMrp), que guardan ellos mismos para poder devolverlo.
 5. **ViewModels:** las vistas nunca reciben entidades directas.
 6. **Layout:** cada vista nueva incluye `Layout = "~/Views/Shared/_LayoutLogistica.cshtml";`.
 7. **Contabilidad:** siempre `DAContabilidad.RegistrarAsiento(...)` con `Cuentas.Xxx`. Nunca códigos a mano ni insertar en tablas contables.
