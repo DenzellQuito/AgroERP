@@ -1,5 +1,53 @@
-@{ ViewData["Title"] = "Compras"; 
-	Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
+@model IEnumerable<AgroERP.ViewModels.Compras.RequerimientoIndexViewModel>
+
+@{
+    ViewData["Title"] = "Requerimientos de Compra";
+    // Regla 6 del README: Toda vista nueva debe incluir este layout
+    Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
 }
-<h2>Módulo Compras</h2>
-<p class="text-muted">En construcción. Responsable: Changa</p>
+
+<div class="container mt-4">
+    <h2 class="mb-3">Gestión de Requerimientos</h2>
+
+    <!-- Botón temporalmente inactivo hasta que hagamos la pantalla de creación -->
+    <a href="@Url.Action("Create")" class="btn btn-primary mb-3"> + Nuevo Requerimiento</a>
+
+    <table class="table table-striped table-hover shadow-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>Nro.</th>
+                <th>Fecha de Solicitud</th>
+                <th>Estado</th>
+                <th>Total Artículos</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.Any())
+            {
+                <tr>
+                    <td colspan="5" class="text-center py-4">No hay requerimientos registrados.</td>
+                </tr>
+            }
+            else
+            {
+                foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="fw-bold">REQ-@item.Id.ToString("D4")</td>
+                        <td>@item.FechaSolicitud</td>
+                        <td>
+                            <span class="badge @(item.Estado == "Borrador" ? "bg-secondary" : "bg-warning text-dark")">
+                                @item.Estado
+                            </span>
+                        </td>
+                        <td>@item.CantidadArticulos</td>
+                        <td>
+                            <a href="#" class="btn btn-sm btn-info">Ver Detalles</a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
