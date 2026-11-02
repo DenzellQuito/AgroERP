@@ -25,37 +25,45 @@ public class DACompras
     /// Necesidad_MRP (guardando NecesidadMrpId) y marca esas necesidades como "ConRequerimiento".
     public async Task<int> CrearRequerimientoDesdeMrp(List<int> necesidadIds, string usuarioId)
     {
-        // 1. Buscar las necesidades de MRP en la base de datos usando los Ids que envía Quito
-        var necesidades = await _db.Set<NecesidadMrp>()
-                                   .Where(n => necesidadIds.Contains(n.Id))
-                                   .ToListAsync();
+        // 1. Validar que las necesidades existan
+        var necesidades = await _db.Set<AgroERP.Models.MRP_IA.NecesidadMrp>()
+            .Where(n => necesidadIds.Contains(n.Id))
+            .ToListAsync();
 
-        // 2. Crear la cabecera del Requerimiento en estado exacto según Regla 8
-        var requerimiento = new RequerimientoCompra
+        if (necesidades.Count != necesidadIds.Distinct().Count())
+            throw new InvalidOperationException("Alguna necesidad no existe.");
+
+        // 2. Validar que no se dupliquen (solo permitir estado Pendiente)
+        if (necesidades.Any(n => n.Estado != "Pendiente"))
+            throw new InvalidOperationException("Solo se pueden enviar necesidades Pendientes.");
+
+        // 3. Crear el requerimiento
+        var req = new AgroERP.Models.Compras.RequerimientoCompra
         {
             UsuarioSolicitanteId = usuarioId,
             FechaSolicitud = DateTime.Now,
-            Estado = "Borrador"
+            Estado = "Borrador",
+            Detalles = new List<AgroERP.Models.Compras.RequerimientoDetalle>()
         };
 
-        // 3. Crear los detalles a partir de la información de las necesidades
-        foreach (var nec in necesidades)
+        foreach (var n in necesidades)
         {
-            requerimiento.Detalles.Add(new RequerimientoDetalle
+            req.Detalles.Add(new AgroERP.Models.Compras.RequerimientoDetalle
             {
-                ArticuloId = nec.ArticuloId,
-                NecesidadMrpId = nec.Id,
-                Cantidad = nec.CantidadNetaSugerida
+                ArticuloId = n.ArticuloId,
+                NecesidadMrpId = n.Id,
+                Cantidad = n.CantidadNetaSugerida // Campo indicado por Denzell
             });
 
-            // 4. Actualizar el estado de la necesidad MRP (Regla 8)
-            nec.Estado = "ConRequerimiento";
+            n.Estado = "ConRequerimiento"; // Actualiza el estado para que no vuelva a jalarse
         }
 
-        // 5. Agregar a la base de datos (Sin SaveChanges por Regla 4)
-        _db.Set<RequerimientoCompra>().Add(requerimiento);
+        _db.Set<AgroERP.Models.Compras.RequerimientoCompra>().Add(req);
 
-        return requerimiento.Id;
+        // 4. Excepción a la Regla: Aquí SÍ llamamos a SaveChangesAsync para obtener el Id generado
+        await _db.SaveChangesAsync();
+
+        return req.Id;
     }
 
     /// LLAMA: Lavado (al cerrar una recepción). Cambia OrdenCompra.Estado a
