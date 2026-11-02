@@ -208,4 +208,43 @@ public class ComprasController : Controller
 
         return View(viewModel);
     }
+
+    [HttpGet]
+    public IActionResult RegistrarFlete(int id)
+    {
+        var viewModel = new FleteViewModel
+        {
+            OrdenCompraId = id,
+            Glosa = $"Flete por transporte de mercadería - OC-{id:D4}"
+        };
+        return View(viewModel);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> RegistrarFlete(FleteViewModel model)
+    {
+        await _da.RegistrarFleteContableAsync(model.OrdenCompraId, model.CostoFlete, model.Glosa);
+        return RedirectToAction(nameof(Ordenes));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> LibroDiario()
+    {
+        var asientos = await _da.ObtenerLibroDiarioAsync();
+        var viewModel = asientos.Select(a => new AsientoDiarioViewModel
+        {
+            Id = a.Id,
+            Fecha = a.FechaContable.ToString("dd/MM/yyyy HH:mm"),
+            Glosa = a.Glosa,
+            Referencia = $"{a.ReferenciaModulo} - {a.ReferenciaId}",
+            Detalles = a.Detalles.Select(d => new DetalleAsientoViewModel
+            {
+                Cuenta = $"{d.Cuenta.Codigo} {d.Cuenta.Nombre}",
+                Debe = d.Debe,
+                Haber = d.Haber
+            }).ToList()
+        }).ToList();
+
+        return View(viewModel);
+    }
 }

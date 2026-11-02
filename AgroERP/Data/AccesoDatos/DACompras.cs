@@ -2,6 +2,7 @@ using AgroERP.Models.Compras;
 using AgroERP.Models.MRP_IA; // Agregado para poder leer la clase NecesidadMrp de Quito
 using Microsoft.EntityFrameworkCore;
 using AgroERP.Models.Maestros;
+using AgroERP.Models.Contabilidad;
 
 namespace AgroERP.Data.AccesoDatos;
 
@@ -225,5 +226,44 @@ public class DACompras
             .Include(o => o.Detalles)
             .ThenInclude(d => d.Articulo)
             .FirstOrDefaultAsync(o => o.Id == id);
+    }
+
+    // ===================== GASTOS LOGÍSTICOS (FLETES) =====================
+    public async Task RegistrarFleteContableAsync(int ordenId, decimal costo, string glosa)
+    {
+        var cuentaGasto = await _db.Set<PlanCuenta>().FirstOrDefaultAsync(c => c.Codigo == Cuentas.FletesGasto);
+        var cuentaPasivo = await _db.Set<PlanCuenta>().FirstOrDefaultAsync(c => c.Codigo == Cuentas.FacturasPorPagar);
+
+        var asiento = new AsientoContable
+        {
+            FechaContable = DateTime.Now,
+            Glosa = glosa,
+            ReferenciaModulo = "Compras", // Texto exacto
+            ReferenciaId = ordenId,
+            UsuarioId = "USR-002",
+            Detalles = new List<AsientoDetalle>
+            {
+                new AsientoDetalle { CuentaId = cuentaGasto!.Id, Debe = costo, Haber = 0 },
+                new AsientoDetalle { CuentaId = cuentaPasivo!.Id, Debe = 0, Haber = costo }
+            }
+        };
+
+        _db.Set<AsientoContable>().Add(asiento);
+        await _db.SaveChangesAsync();
+    }
+
+    // ===================== VISTAS CONTABLES =====================
+    public async Task<List<PlanCuenta>> ObtenerPlanCuentasAsync()
+    {
+        return await _db.Set<PlanCuenta>().ToListAsync();
+    }
+
+    public async Task<List<AsientoContable>> ObtenerLibroDiarioAsync()
+    {
+        return await _db.Set<AsientoContable>()
+            .Include(a => a.Detalles)
+            .ThenInclude(d => d.Cuenta)
+            .OrderByDescending(a => a.FechaContable)
+            .ToListAsync();
     }
 }

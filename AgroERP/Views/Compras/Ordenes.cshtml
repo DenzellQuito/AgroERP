@@ -36,6 +36,7 @@
                         <td><span class="badge bg-info text-dark">@item.Estado</span></td>
                         <td>
                             <a href="@Url.Action("GenerarPdf", new { id = item.Id })" target="_blank" class="btn btn-sm btn-danger">📄 PDF</a>
+                            <a href="@Url.Action("RegistrarFlete", new { id = item.Id })" class="btn btn-sm btn-warning">🚚 Registrar Flete</a>
                         </td>
                     </tr>
                 }
