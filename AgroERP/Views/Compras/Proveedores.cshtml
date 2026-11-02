@@ -1,0 +1,38 @@
+﻿@model IEnumerable<AgroERP.ViewModels.Compras.ProveedorViewModel>
+
+@{
+    ViewData["Title"] = "Catálogo de Proveedores";
+    Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-3">Proveedores</h2>
+    <a href="@Url.Action("CreateProveedor")" class="btn btn-primary mb-3"> + Nuevo Proveedor</a>
+
+    <table class="table table-striped shadow-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>RUC</th>
+                <th>Razón Social</th>
+                <th>Confiabilidad (1-5)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.Any())
+            {
+                <tr><td colspan="3" class="text-center">No hay proveedores registrados.</td></tr>
+            }
+            else
+            {
+                foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.Ruc</td>
+                        <td>@item.RazonSocial</td>
+                        <td>@item.NivelConfiabilidad</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>

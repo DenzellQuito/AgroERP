@@ -1,6 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using AgroERP.Models.Compras;
 using AgroERP.Models.MRP_IA; // Agregado para poder leer la clase NecesidadMrp de Quito
+using Microsoft.EntityFrameworkCore;
+using AgroERP.Models.Maestros;
 
 namespace AgroERP.Data.AccesoDatos;
 
@@ -126,5 +127,18 @@ public class DACompras
     public async Task<List<AgroERP.Models.Maestros.Articulo>> ObtenerArticulosAsync()
     {
         return await _db.Set<AgroERP.Models.Maestros.Articulo>().ToListAsync();
+    }
+
+    // ===================== CRUD PROVEEDORES =====================
+    public async Task<List<Proveedor>> ObtenerProveedoresAsync()
+    {
+        return await _db.Set<Proveedor>().ToListAsync();
+    }
+
+    public async Task<int> CrearProveedorAsync(Proveedor proveedor)
+    {
+        _db.Set<Proveedor>().Add(proveedor);
+        await _db.SaveChangesAsync(); // Operación interna de tu módulo (Regla 4)
+        return proveedor.Id;
     }
 }

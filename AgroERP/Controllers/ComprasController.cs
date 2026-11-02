@@ -86,4 +86,38 @@ public class ComprasController : Controller
         return RedirectToAction(nameof(Details), new { id });
     }
 
+    [HttpGet]
+    public async Task<IActionResult> Proveedores()
+    {
+        var proveedores = await _da.ObtenerProveedoresAsync();
+        var viewModel = proveedores.Select(p => new ProveedorViewModel
+        {
+            Ruc = p.Ruc,
+            RazonSocial = p.RazonSocial,
+            NivelConfiabilidad = p.NivelConfiabilidad
+        }).ToList();
+
+        return View(viewModel);
+    }
+
+    [HttpGet]
+    public IActionResult CreateProveedor()
+    {
+        return View();
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateProveedor(string ruc, string razonSocial, int nivelConfiabilidad)
+    {
+        var proveedor = new AgroERP.Models.Maestros.Proveedor
+        {
+            Ruc = ruc,
+            RazonSocial = razonSocial,
+            NivelConfiabilidad = nivelConfiabilidad
+        };
+
+        await _da.CrearProveedorAsync(proveedor);
+
+        return RedirectToAction(nameof(Proveedores));
+    }
 }
