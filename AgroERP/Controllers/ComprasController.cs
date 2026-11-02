@@ -55,4 +55,35 @@ public class ComprasController : Controller
         // Volver a la pantalla principal
         return RedirectToAction(nameof(Index));
     }
+
+    [HttpGet]
+    public async Task<IActionResult> Details(int id)
+    {
+        var requerimiento = await _da.ObtenerRequerimientoPorIdAsync(id);
+
+        if (requerimiento == null) return NotFound();
+
+        var viewModel = new RequerimientoDetalleViewModel
+        {
+            Id = requerimiento.Id,
+            FechaSolicitud = requerimiento.FechaSolicitud.ToString("dd/MM/yyyy HH:mm"),
+            Estado = requerimiento.Estado,
+            Articulos = requerimiento.Detalles.Select(d => new ItemRequerimientoViewModel
+            {
+                CodigoArticulo = d.Articulo.Codigo,
+                NombreArticulo = d.Articulo.Nombre,
+                Cantidad = d.Cantidad
+            }).ToList()
+        };
+
+        return View(viewModel);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> EnviarAprobacion(int id)
+    {
+        await _da.EnviarAprobacionAsync(id);
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
 }

@@ -1,0 +1,58 @@
+﻿@model AgroERP.ViewModels.Compras.RequerimientoDetalleViewModel
+
+@{
+    ViewData["Title"] = "Detalles del Requerimiento";
+    Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Requerimiento: REQ-@Model.Id.ToString("D4")</h2>
+        <span class="badge @(Model.Estado == "Borrador" ? "bg-secondary fs-6" : "bg-warning text-dark fs-6")">
+            @Model.Estado
+        </span>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light fw-bold">
+            Información General
+        </div>
+        <div class="card-body">
+            <p class="mb-1"><strong>Fecha de Solicitud:</strong> @Model.FechaSolicitud</p>
+            <p class="mb-0"><strong>Solicitante:</strong> USR-002 (Changa)</p>
+        </div>
+    </div>
+
+    <h4 class="mb-3">Artículos Solicitados</h4>
+    <table class="table table-bordered table-striped shadow-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>Código</th>
+                <th>Descripción</th>
+                <th class="text-end">Cantidad</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Articulos)
+            {
+                <tr>
+                    <td>@item.CodigoArticulo</td>
+                    <td>@item.NombreArticulo</td>
+                    <td class="text-end">@item.Cantidad.ToString("0.00")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="mt-4 d-flex">
+        <a href="@Url.Action("Index")" class="btn btn-secondary me-2">Volver a la lista</a>
+        @if (Model.Estado == "Borrador")
+        {
+            <form asp-action="EnviarAprobacion" method="post">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-primary">Enviar a Aprobación</button>
+            </form>
+        }
+    </div>
+
+</div>

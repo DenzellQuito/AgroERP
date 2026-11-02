@@ -43,7 +43,7 @@
                         </td>
                         <td>@item.CantidadArticulos</td>
                         <td>
-                            <a href="#" class="btn btn-sm btn-info">Ver Detalles</a>
+                            <a href="@Url.Action("Details", new { id = item.Id })" class="btn btn-sm btn-info">Ver Detalles</a>
                         </td>
                     </tr>
                 }
