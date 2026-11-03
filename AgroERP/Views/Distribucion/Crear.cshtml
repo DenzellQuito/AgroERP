@@ -1,0 +1,74 @@
+﻿@model AgroERP.ViewModels.Distribucion.PedidoViewModel
+@{
+    ViewData["Title"] = "Nuevo Pedido";
+    Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+    <h2>Nuevo Pedido de Venta</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver al Listado
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form asp-action="Crear" method="post">
+
+                    <!-- Muestra errores generales (como el de límite de crédito superado) -->
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="ClienteId" class="control-label fw-bold">Cliente</label>
+                        <select asp-for="ClienteId" class="form-select"
+                                asp-items="@(new SelectList(ViewBag.Clientes, "Id", "RazonSocial"))">
+                            <option value="">-- Seleccione un cliente --</option>
+                        </select>
+                        <span asp-validation-for="ClienteId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="ArticuloId" class="control-label fw-bold">Artículo (Fresa)</label>
+                        <select asp-for="ArticuloId" class="form-select"
+                                asp-items="@(new SelectList(ViewBag.Articulos, "Id", "Nombre"))">
+                            <option value="">-- Seleccione artículo --</option>
+                        </select>
+                        <span asp-validation-for="ArticuloId" class="text-danger"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label asp-for="Cantidad" class="control-label fw-bold">Cantidad (Jabas)</label>
+                                <input asp-for="Cantidad" class="form-control" type="number" step="0.01" value="1" />
+                                <span asp-validation-for="Cantidad" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label asp-for="PrecioUnitario" class="control-label fw-bold">Precio Unitario (S/)</label>
+                                <input asp-for="PrecioUnitario" class="form-control" type="number" step="0.01" value="5.50" />
+                                <span asp-validation-for="PrecioUnitario" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label asp-for="FechaPromesaEntrega" class="control-label fw-bold">Fecha Promesa Entrega</label>
+                        <input asp-for="FechaPromesaEntrega" class="form-control" type="date" />
+                        <span asp-validation-for="FechaPromesaEntrega" class="text-danger"></span>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-save"></i> Guardar Pedido
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
