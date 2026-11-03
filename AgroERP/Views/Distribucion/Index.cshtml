@@ -6,24 +6,24 @@
 
 <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
     <h2>Pedidos de Venta</h2>
-    <a asp-action="Crear" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Nuevo Pedido
-    </a>
+
+    <div>
+        <a asp-action="Devolucion" class="btn btn-outline-danger me-2">
+            <i class="bi bi-arrow-return-left"></i> Devoluciones
+        </a>
+        <a asp-action="Crear" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nuevo Pedido
+        </a>
+    </div>
 </div>
 
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show">
-        @TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    <div class="alert alert-success">@TempData["Success"]</div>
 }
 @if (TempData["Warning"] != null)
 {
-    <div class="alert alert-warning alert-dismissible fade show">
-        @TempData["Warning"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    <div class="alert alert-warning">@TempData["Warning"]</div>
 }
 
 <div class="card shadow-sm">
@@ -36,6 +36,7 @@
                     <th>Fecha</th>
                     <th>Total</th>
                     <th>Estado</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -48,19 +49,46 @@
                             <td>@item.Cliente</td>
                             <td>@item.Fecha.ToString("dd/MM/yyyy")</td>
                             <td>@item.Total.ToString("C")</td>
+                            <td><span class="badge bg-info text-dark">@item.Estado</span></td>
                             <td>
-                                <span class="badge bg-info text-dark">@item.Estado</span>
+                                <!-- FLUJO DE ESTADOS -->
+                                @if (item.Estado == "Pendiente")
+                                {
+                                    <form asp-action="GenerarPicking" asp-route-id="@item.Id" method="post" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-warning text-dark">
+                                            <i class="bi bi-box-seam"></i> Preparar (Picking)
+                                        </button>
+                                    </form>
+                                }
+                                else if (item.Estado == "Picking")
+                                {
+                                    <a asp-action="Despachar" asp-route-id="@item.Id" class="btn btn-sm btn-info text-white">
+                                        <i class="bi bi-truck"></i> Despachar
+                                    </a>
+                                }
+                                else if (item.Estado == "EnRuta")
+                                {
+                                    <form asp-action="MarcarEntregado" asp-route-id="@item.Id" method="post" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-check-circle"></i> Entregar
+                                        </button>
+                                    </form>
+                                }
+                                else if (item.Estado == "Entregado")
+                                {
+                                    <form asp-action="Facturar" asp-route-id="@item.Id" method="post" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="bi bi-receipt"></i> Facturar
+                                        </button>
+                                    </form>
+                                }
                             </td>
                         </tr>
                     }
                 }
                 else
                 {
-                    <tr>
-                        <td colspan="5" class="text-center text-muted py-4">
-                            No hay pedidos registrados aún.
-                        </td>
-                    </tr>
+                    <tr><td colspan="6" class="text-center text-muted py-4">No hay pedidos.</td></tr>
                 }
             </tbody>
         </table>
