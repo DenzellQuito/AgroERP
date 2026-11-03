@@ -104,6 +104,8 @@
             <!-- 2. Compras -->
             <li>
                 <a href="/Compras/Index"><i class="bi bi-cart3"></i> Compras</a>
+                <a asp-controller="Compras" asp-action="Ordenes">Órdenes de compra</a>
+                <a asp-controller="Compras" asp-action="Proveedores">Proveedores</a>
             </li>
 
             <!-- 3. Recepción y Calidad -->
@@ -124,6 +126,7 @@
             <!-- 6. Control de Gestión -->
             <li>
                 <a href="/BI/Dashboard"><i class="bi bi-graph-up-arrow"></i> Control de Gestión (BI)</a>
+                <a asp-controller="Compras" asp-action="LibroDiario">Libro Diario</a>
                 <a asp-controller="Indicadores" asp-action="Index">Indicadores (KPI)</a>
             </li>
         </ul>
