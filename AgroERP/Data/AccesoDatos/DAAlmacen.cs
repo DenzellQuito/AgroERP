@@ -182,13 +182,13 @@ public class DAAlmacen
         _db.AjustesInventario.Add(new AjusteInventario
         {
             LoteId = devolucion.LoteId, ZonaUbicacionId = zona.Value,
-            UsuarioId = usuarioId, Fecha = DateTime.Now, TipoAjuste = "DevolucionPendienteValorizacion",
+            UsuarioId = usuarioId, Fecha = DateTime.Now, TipoAjuste = "Ajuste",
             Cantidad = devolucion.CantidadRechazada, CostoAsumido = 0
         });
         _db.MovimientosKardex.Add(new MovimientoKardex
         {
             LoteId = devolucion.LoteId, Fecha = DateTime.Now,
-            TipoMovimiento = "DevolucionPendienteValorizacion", Cantidad = devolucion.CantidadRechazada,
+            TipoMovimiento = "Ajuste", Cantidad = devolucion.CantidadRechazada,
             ZonaDestinoId = zona.Value, ReferenciaDocumento = $"DEV-{devolucionId}"
         });
         // El modelo DevolucionCliente no separa cantidad conforme/dañada ni guarda costo.
@@ -244,6 +244,50 @@ public class DAAlmacen
         await _db.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Registra un conteo cíclico. La diferencia se refleja en existencias,
+    /// AjustesInventario (ConteoPositivo/ConteoNegativo) y Kardex (Ajuste).
+    /// Este método guarda la operación una sola vez.
+    /// </summary>
+    public async Task RegistrarConteoAsync(int loteId, int zonaId, decimal cantidadContada, string usuarioId)
+    {
+        if (cantidadContada < 0) throw new InvalidOperationException("La cantidad contada no puede ser negativa.");
+        if (string.IsNullOrWhiteSpace(usuarioId)) throw new InvalidOperationException("No se pudo identificar al usuario responsable.");
+
+        var existencia = await _db.InventariosExistencia
+            .SingleOrDefaultAsync(x => x.LoteId == loteId && x.ZonaUbicacionId == zonaId)
+            ?? throw new InvalidOperationException("No existe inventario para el lote y ubicación seleccionados.");
+
+        var diferencia = cantidadContada - existencia.CantidadFisica;
+        if (diferencia == 0) throw new InvalidOperationException("El conteo coincide con el stock del sistema; no hay diferencia que ajustar.");
+        if (diferencia < 0 && existencia.CantidadFisica - cantidadContada < existencia.CantidadReservada)
+            throw new InvalidOperationException("El conteo no puede dejar el stock físico por debajo de la cantidad reservada.");
+
+        existencia.CantidadFisica = cantidadContada;
+        _db.AjustesInventario.Add(new AjusteInventario
+        {
+            LoteId = loteId,
+            ZonaUbicacionId = zonaId,
+            UsuarioId = usuarioId,
+            Fecha = DateTime.Now,
+            TipoAjuste = diferencia > 0 ? "ConteoPositivo" : "ConteoNegativo",
+            Cantidad = Math.Abs(diferencia),
+            CostoAsumido = 0
+        });
+        _db.MovimientosKardex.Add(new MovimientoKardex
+        {
+            LoteId = loteId,
+            Fecha = DateTime.Now,
+            TipoMovimiento = "Ajuste",
+            Cantidad = Math.Abs(diferencia),
+            ZonaOrigenId = diferencia < 0 ? zonaId : null,
+            ZonaDestinoId = diferencia > 0 ? zonaId : null,
+            ReferenciaDocumento = $"Conteo cíclico ({(diferencia > 0 ? "positivo" : "negativo")})"
+        });
+
+        await _db.SaveChangesAsync();
+    }
+
     public async Task RegistrarMermaAsync(int loteId, int zonaId, decimal cantidad, decimal costoUnitario, string usuarioId, string motivo)
     {
         if (cantidad <= 0 || costoUnitario < 0) throw new InvalidOperationException("Cantidad y costo no válidos.");
@@ -252,6 +296,8 @@ public class DAAlmacen
             ?? throw new InvalidOperationException("No existe la existencia indicada.");
         var lote = await _db.Lotes.Include(x => x.Articulo).SingleAsync(x => x.Id == loteId);
         if (ex.CantidadFisica - ex.CantidadReservada < cantidad) throw new InvalidOperationException("La merma supera el stock disponible no reservado.");
+        // AjusteInventario.CostoAsumido almacena el COSTO TOTAL de la merma
+        // (cantidad * costo unitario), nunca el costo unitario.
         var monto = Math.Round(cantidad * costoUnitario, 2, MidpointRounding.AwayFromZero);
         ex.CantidadFisica -= cantidad;
         var ajuste = new AjusteInventario { LoteId = loteId, ZonaUbicacionId = zonaId, UsuarioId = usuarioId, Fecha = DateTime.Now, TipoAjuste = "Merma", Cantidad = cantidad, CostoAsumido = monto };
@@ -259,11 +305,15 @@ public class DAAlmacen
         _db.MovimientosKardex.Add(new MovimientoKardex { LoteId = loteId, Fecha = DateTime.Now, TipoMovimiento = "Merma", Cantidad = cantidad, ZonaOrigenId = zonaId, ReferenciaDocumento = motivo });
         if (monto > 0)
         {
-            var tipo = lote.Articulo.Tipo?.ToLowerInvariant() ?? string.Empty;
-            var cuentaInventario = tipo.Contains("jaba") || tipo.Contains("envase")
+            var tipo = lote.Articulo.Tipo?.Trim().ToLowerInvariant() ?? string.Empty;
+            var cuentaInventario = tipo.Contains("empaque") || tipo.Contains("envase") || tipo.Contains("jaba")
                 ? Cuentas.Envases
-                : (tipo.Contains("fresa") || tipo.Contains("terminado") || tipo.Contains("producto")
-                    ? Cuentas.ProductoTerminado : Cuentas.MaterialesAux);
+                : tipo.Contains("fresa") || tipo.Contains("producto terminado") || tipo.Contains("terminado")
+                    ? Cuentas.ProductoTerminado
+                    : tipo.Contains("insumo")
+                        ? Cuentas.MaterialesAux
+                        : throw new InvalidOperationException(
+                            $"El tipo de artículo '{lote.Articulo.Tipo}' no tiene una cuenta de inventario configurada para mermas.");
             await _contabilidad.RegistrarAsiento("Merma", null, $"Merma de inventario: {motivo}", usuarioId,
                 (Cuentas.MermasGasto, monto, 0), (cuentaInventario, 0, monto));
         }

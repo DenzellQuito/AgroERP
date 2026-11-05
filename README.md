@@ -48,7 +48,7 @@ Las tablas están en el esquema **`dbo`** y su nombre es el del `DbSet` (en plur
 1. **Lectura libre, escritura solo del dueño.** Puedes consultar cualquier tabla; solo modificas las tuyas. Para tocar una ajena, llama al método de su DAO (sección 7).
 2. **No tocar:** `ApplicationDbContext`, `Models/`, `_LayoutLogistica.cshtml`, `Program.cs`, `Migrations/`. Pídeselo a Quito.
 3. **Solo Quito ejecuta `Add-Migration`.** Los demás solo `Update-Database`. Después de cada merge a `main`, haz *Pull* y `Update-Database`.
-4. **Un solo `SaveChangesAsync` por operación.** Stock + estado + asiento se guardan juntos al final del flujo. Los métodos de contrato **no** llaman `SaveChanges`.
+4. Un solo SaveChangesAsync por operación. Stock + estado + asiento se guardan juntos al final del flujo. Los métodos de contrato no llaman SaveChanges, excepto los que devuelven un Id nuevo (DACompras.CrearRequerimientoDesdeMrp), que guardan ellos mismos para poder devolverlo.
 5. **ViewModels:** las vistas nunca reciben entidades directas.
 6. **Layout:** cada vista nueva incluye `Layout = "~/Views/Shared/_LayoutLogistica.cshtml";`.
 7. **Contabilidad:** siempre `DAContabilidad.RegistrarAsiento(...)` con `Cuentas.Xxx`. Nunca códigos a mano ni insertar en tablas contables.
@@ -67,7 +67,7 @@ Las tablas están en el esquema **`dbo`** y su nombre es el del `DbSet` (en plur
    - AjusteInventario.TipoAjuste: `Merma` `ConteoPositivo` `ConteoNegativo` (todo conteo debe contener la palabra "Conteo")
    - Entrega de pedidos: al entregar, Díaz debe llenar `PedidoVenta.FechaEntregaReal` (el OTIF solo cuenta pedidos con esa fecha)
    - Recepción: Lavado debe llenar `CantidadPedida` y `CantidadRecibida` en cada `DetalleRecepcion` (de ahí sale el cumplimiento de proveedores)
-
+9. Nunca escribas un Id de usuario en el código (ni USR-002 ni ninguno). Usa siempre el usuario conectado: User.FindFirstValue(ClaimTypes.NameIdentifier).
 ## 6. Catálogos (no insertes a mano)
 Artículos, campañas y recetas se cargan desde las pantallas `/Articulos`, `/Campanias` y `/Recetas`. Proveedores, clientes y almacenes los carga el dueño de cada módulo en su propia pantalla; mientras tanto, usa inserts en SQL para probar.
 
