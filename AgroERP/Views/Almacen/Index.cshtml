@@ -94,6 +94,39 @@
     </div>
 </div>
 
+<div class="card alm-section">
+    <div class="card-header"><i class="bi bi-clipboard-check me-2 text-success"></i>Inventario cíclico · Conteo físico</div>
+    <div class="card-body">
+        <p class="text-muted small">Registra la cantidad física contada. Si existe diferencia, se generará un ajuste ConteoPositivo o ConteoNegativo y un movimiento Kardex de tipo Ajuste.</p>
+        <form asp-action="RegistrarConteo" method="post" class="row g-2 align-items-end">
+            @Html.AntiForgeryToken()
+            <div class="col-md-4">
+                <label class="form-label">Lote y artículo</label>
+                <select name="LoteId" class="form-select" required>
+                    <option value="">Seleccionar...</option>
+                    @foreach (var l in Model.Existencias.GroupBy(x => x.LoteId).Select(g => g.First())) {
+                        <option value="@l.LoteId">@l.Articulo - @l.NumeroLote</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Ubicación</label>
+                <select name="ZonaId" class="form-select" required>
+                    <option value="">Seleccionar...</option>
+                    @foreach (var z in Model.Zonas) { <option value="@z.Id">@z.Almacen / @z.Codigo</option> }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Cantidad física contada</label>
+                <input name="CantidadContada" type="number" min="0" step="0.0001" class="form-control" required />
+            </div>
+            <div class="col-md-2 d-grid">
+                <button class="btn btn-success" @(Model.Existencias.Count == 0 ? "disabled" : null)>Registrar conteo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card alm-section"><div class="card-header"><i class="bi bi-list-check me-2 text-success"></i>Órdenes de picking recientes</div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Orden</th><th>Pedido</th><th>Operario</th><th>Detalles</th><th class="text-end">Cantidad preparada</th></tr></thead><tbody>
 @if(Model.OrdenesPicking.Count==0){<tr><td colspan="5" class="text-center text-muted py-3">No hay órdenes de picking registradas.</td></tr>}
 @foreach(var p in Model.OrdenesPicking){<tr><td>#@p.Id</td><td>#@p.PedidoId</td><td>@p.OperarioId</td><td>@p.Detalles</td><td class="text-end">@p.CantidadTotal.ToString("N2")</td></tr>}

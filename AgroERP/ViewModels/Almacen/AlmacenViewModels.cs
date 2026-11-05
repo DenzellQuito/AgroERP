@@ -46,3 +46,10 @@ public class MermaFormViewModel
     [Range(typeof(decimal), "0", "999999999")] public decimal CostoUnitario { get; set; }
     [Required, StringLength(250)] public string Motivo { get; set; } = string.Empty;
 }
+
+public class ConteoCiclicoFormViewModel
+{
+    [Range(1, int.MaxValue)] public int LoteId { get; set; }
+    [Range(1, int.MaxValue)] public int ZonaId { get; set; }
+    [Range(typeof(decimal), "0", "999999999")] public decimal CantidadContada { get; set; }
+}
