@@ -1,5 +1,64 @@
-@{ ViewData["Title"] = "Calidad"; 
-	Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
+@model IEnumerable<AgroERP.ViewModels.Calidad.RecepcionListViewModel>
+@{
+    ViewData["Title"] = "Recepción de Mercadería";
+    Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
 }
-<h2>Módulo Calidad</h2>
-<p class="text-muted">En construcción. Responsable: George Lavado</p>
+
+<div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+    <h2>Recepción de Mercadería</h2>
+    <a asp-action="Inspeccionar" class="btn btn-outline-primary">
+        <i class="bi bi-clipboard-check"></i> Ir a Inspección de Calidad
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning">@TempData["Warning"]</div>
+}
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>OC #</th>
+                    <th>Proveedor</th>
+                    <th>Fecha Emisión</th>
+                    <th>Total</th>
+                    <th>Acción (Recibir)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.OrdenCompraId</td>
+                            <td>@item.Proveedor</td>
+                            <td>@item.FechaEmision.ToShortDateString()</td>
+                            <td>@item.Total.ToString("C")</td>
+                            <td>
+                                <form asp-action="RegistrarRecepcion" method="post" class="d-flex gap-2">
+                                    <input type="hidden" name="ordenCompraId" value="@item.OrdenCompraId" />
+                                    <input name="guiaProveedor" class="form-control form-control-sm" placeholder="N° Guía" required style="width: 120px;" />
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-box-arrow-in-down"></i> Recibir
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="5" class="text-center text-muted">No hay órdenes de compra pendientes de recepción.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

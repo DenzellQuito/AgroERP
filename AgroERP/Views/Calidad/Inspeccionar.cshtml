@@ -1,0 +1,99 @@
+﻿@model IEnumerable<AgroERP.ViewModels.Calidad.InspeccionListViewModel>
+@{
+    ViewData["Title"] = "Inspección de Calidad";
+    Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+    <h2>Inspección de Calidad</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Recepción
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning">@TempData["Warning"]</div>
+}
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Lote</th>
+                    <th>Artículo</th>
+                    <th>Cant. Recibida</th>
+                    <th>Proveedor</th>
+                    <th>Guía Prov.</th> <!-- NUEVA COLUMNA -->
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.NumeroLote</td>
+                            <td>@item.Articulo</td>
+                            <td>@item.CantidadRecibida</td>
+                            <td>@item.Proveedor</td>
+                            <td>@item.GuiaProveedor</td> <!-- NUEVO DATO -->
+                            <td>
+                                <form asp-action="GuardarInspeccion" method="post" class="d-flex gap-2 align-items-center" onsubmit="return validarFormulario(this)">
+                                    <input type="hidden" name="detalleId" value="@item.DetalleId" />
+
+                                    <select name="esConforme" class="form-select form-select-sm" style="width: 120px;" onchange="toggleMotivo(this)">
+                                        <option value="true">Liberar</option>
+                                        <option value="false">Rechazar</option>
+                                    </select>
+
+                                    <input name="motivoRechazo" class="form-control form-control-sm motivo-input" placeholder="Motivo (Obligatorio)" disabled />
+                                    <button type="submit" class="btn btn-sm btn-success">Procesar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="6" class="text-center text-muted">No hay lotes en cuarentena pendientes de inspección.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleMotivo(selectElement) {
+            var form = selectElement.closest('form');
+            var motivoInput = form.querySelector('.motivo-input');
+
+            if (selectElement.value === "false") {
+                motivoInput.disabled = false;
+                motivoInput.required = true;
+            } else {
+                motivoInput.disabled = true;
+                motivoInput.required = false;
+                motivoInput.value = "";
+            }
+        }
+
+        function validarFormulario(form) {
+            var select = form.querySelector('select[name="esConforme"]');
+            var motivo = form.querySelector('.motivo-input');
+
+            if (select.value === "false" && motivo.value.trim() === "") {
+                alert("Debe ingresar un motivo para rechazar el lote.");
+                return false;
+            }
+            return true;
+        }
+    </script>
+}
