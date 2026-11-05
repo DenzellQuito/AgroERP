@@ -80,6 +80,30 @@ public class AlmacenController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> RegistrarConteo(ConteoCiclicoFormViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "Revisa los datos del conteo cíclico.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var usuarioId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        try
+        {
+            if (string.IsNullOrWhiteSpace(usuarioId))
+                throw new InvalidOperationException("No se pudo identificar al usuario autenticado.");
+
+            await _da.RegistrarConteoAsync(model.LoteId, model.ZonaId, model.CantidadContada, usuarioId);
+            TempData["Ok"] = "Conteo cíclico registrado; se actualizó el stock y se generó el ajuste.";
+        }
+        catch (Exception ex) { TempData["Error"] = ex.Message; }
+
+        return RedirectToAction(nameof(Index));
+    }
+
     private async Task<IActionResult> IndexConError(string mensaje)
     {
         TempData["Error"] = mensaje;
