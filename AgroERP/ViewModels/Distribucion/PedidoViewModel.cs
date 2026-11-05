@@ -28,4 +28,6 @@ public class PedidoListViewModel
     public DateTime Fecha { get; set; }
     public decimal Total { get; set; }
     public string Estado { get; set; } = null!;
+
+    public bool TieneStockReservado { get; set; }
 }

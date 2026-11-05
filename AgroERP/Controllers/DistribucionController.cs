@@ -25,7 +25,7 @@ public class DistribucionController : Controller
         _db = db;
     }
 
-    // 1. GET: Distribucion (Listado de Pedidos)
+    // 1. GET: Listado
     public async Task<IActionResult> Index()
     {
         var pedidos = await _db.PedidosVenta
@@ -37,21 +37,22 @@ public class DistribucionController : Controller
                 Cliente = p.Cliente.RazonSocial,
                 Fecha = p.FechaPedido,
                 Total = p.Total,
-                Estado = p.EstadoLogistico
+                Estado = p.EstadoLogistico,
+                TieneStockReservado = _db.ReservasInventario.Any(r => r.PedidoVentaDetalle.PedidoId == p.Id && r.Estado == "Activa")
             })
             .ToListAsync();
 
         return View(pedidos);
     }
 
-    // 2. GET: Distribucion/Crear (Formulario)
+    // 2. GET: Crear
     public async Task<IActionResult> Crear()
     {
         await CargarCombos();
         return View(new PedidoViewModel());
     }
 
-    // 3. POST: Distribucion/Crear (Guardar Pedido)
+    // 3. POST: Crear
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Crear(PedidoViewModel model)
@@ -61,7 +62,6 @@ public class DistribucionController : Controller
         var cliente = await _db.Clientes.FindAsync(model.ClienteId);
         if (cliente == null) return NotFound("Cliente no encontrado");
 
-        // Validación: Solo fresas
         var articulo = await _db.Articulos.FindAsync(model.ArticuloId);
         if (articulo == null || articulo.Tipo != "Fresa")
         {
@@ -72,7 +72,6 @@ public class DistribucionController : Controller
 
         decimal total = model.Cantidad * model.PrecioUnitario;
 
-        // Validación de crédito
         if (total > cliente.LimiteCredito)
         {
             ModelState.AddModelError("", $"El total ({total:C}) supera el límite de crédito ({cliente.LimiteCredito:C}).");
@@ -104,15 +103,13 @@ public class DistribucionController : Controller
         }
         else
         {
-            pedido.EstadoLogistico = "Picking";
-            await _db.SaveChangesAsync();
-            TempData["Success"] = "Pedido creado y stock reservado.";
+            TempData["Success"] = "Pedido creado y stock reservado. Listo para preparar.";
         }
 
         return RedirectToAction(nameof(Index));
     }
 
-    // 4. POST: Marcar Pedido como Entregado
+    // 4. POST: Marcar Entregado
     [HttpPost]
     public async Task<IActionResult> MarcarEntregado(int id)
     {
@@ -127,7 +124,7 @@ public class DistribucionController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // 5. POST: Facturar Pedido
+    // 5. POST: Facturar
     [HttpPost]
     public async Task<IActionResult> Facturar(int id)
     {
@@ -151,7 +148,7 @@ public class DistribucionController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // 6. GET: Formulario de Devolución
+    // 6. GET: Devolución
     public async Task<IActionResult> Devolucion()
     {
         var model = new DevolucionViewModel
@@ -163,12 +160,14 @@ public class DistribucionController : Controller
             ArticulosDisponibles = await _db.Articulos.Where(a => a.Tipo == "Fresa")
                 .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.Nombre }).ToListAsync(),
             LotesDisponibles = await _db.Lotes
+                .Include(l => l.Articulo)
+                .Where(l => l.Articulo.Tipo == "Fresa")
                 .Select(l => new SelectListItem { Value = l.Id.ToString(), Text = $"Lote: {l.NumeroLote}" }).ToListAsync()
         };
         return View(model);
     }
 
-    // 7. POST: Guardar Devolución
+    // 7. POST: Devolución
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Devolucion(DevolucionViewModel model)
@@ -205,7 +204,7 @@ public class DistribucionController : Controller
         }
     }
 
-    // 8. POST: Generar Orden de Picking
+    // 8. POST: Generar Picking
     [HttpPost]
     public async Task<IActionResult> GenerarPicking(int id)
     {
@@ -244,7 +243,7 @@ public class DistribucionController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // 9. GET: Formulario de Despacho (Guía de Remisión)
+    // 9. GET: Despachar
     public async Task<IActionResult> Despachar(int id)
     {
         var pedido = await _db.PedidosVenta.FindAsync(id);
@@ -253,36 +252,39 @@ public class DistribucionController : Controller
         return View();
     }
 
-    // 10. POST: Registrar Guía de Remisión (PROTEGIDO CON TRANSACCIÓN)
+    // 10. POST: Despachar (CON PROTECCIÓN DE DATOS)
     [HttpPost]
     public async Task<IActionResult> Despachar(int id, string placa, string chofer)
     {
         var pedido = await _db.PedidosVenta.FindAsync(id);
         if (pedido == null) return NotFound();
 
-        var orden = await _db.OrdenesPicking.FirstOrDefaultAsync(o => o.PedidoVentaId == id);
-        if (orden == null) return BadRequest("No existe orden de picking.");
+        var orden = await _db.OrdenesPicking
+            .OrderByDescending(o => o.Id)
+            .FirstOrDefaultAsync(o => o.PedidoVentaId == id);
 
-        // Abrimos transacción para proteger todo
+        if (orden == null)
+        {
+            TempData["Warning"] = "El pedido no tiene una Orden de Picking válida. Vuelve a generarla.";
+            return RedirectToAction(nameof(Index));
+        }
+
         using var transaction = await _db.Database.BeginTransactionAsync();
 
         try
         {
-            // 1. Registrar la Guía de Remisión
             var guia = new GuiaRemisionRemitente
             {
                 PedidoVentaId = id,
                 PlacaVehiculo = placa,
                 Chofer = chofer,
                 MotivoTraslado = "Venta de mercadería",
-                Estado = "Emitida"
+                Estado = "Aceptada"
             };
             _db.GuiasRemisionRemitente.Add(guia);
 
-            // 2. Méndez intenta descontar el stock
             await _almacen.ConfirmarSalida(orden.Id);
 
-            // 3. Si Méndez no falló, actualizamos el estado y guardamos
             pedido.EstadoLogistico = "EnRuta";
             await _db.SaveChangesAsync();
 
@@ -291,16 +293,19 @@ public class DistribucionController : Controller
         }
         catch (Exception ex)
         {
-            // Si Méndez falla (ej. falta stock), deshacemos TODO.
             await transaction.RollbackAsync();
             TempData["Warning"] = "Error al despachar: " + ex.Message;
-            return RedirectToAction(nameof(Despachar), new { id = id });
+
+            // RECUPERAMOS LOS DATOS PARA QUE EL USUARIO NO LOS PIERDA
+            ViewBag.PlacaAnterior = placa;
+            ViewBag.ChoferAnterior = chofer;
+            ViewBag.PedidoId = id;
+
+            return View(); // Recargamos la misma vista
         }
 
         return RedirectToAction(nameof(Index));
     }
-
-    // --- MÉTODOS AUXILIARES ---
 
     private async Task RecargarListasDevolucion(DevolucionViewModel model)
     {
@@ -310,7 +315,7 @@ public class DistribucionController : Controller
             .ToListAsync();
         model.ArticulosDisponibles = await _db.Articulos.Where(a => a.Tipo == "Fresa")
             .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.Nombre }).ToListAsync();
-        model.LotesDisponibles = await _db.Lotes
+        model.LotesDisponibles = await _db.Lotes.Include(l => l.Articulo).Where(l => l.Articulo.Tipo == "Fresa")
             .Select(l => new SelectListItem { Value = l.Id.ToString(), Text = $"Lote: {l.NumeroLote}" }).ToListAsync();
     }
 

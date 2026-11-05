@@ -49,16 +49,26 @@
                             <td>@item.Cliente</td>
                             <td>@item.Fecha.ToString("dd/MM/yyyy")</td>
                             <td>@item.Total.ToString("C")</td>
-                            <td><span class="badge bg-info text-dark">@item.Estado</span></td>
+                            <td>
+                                <span class="badge @(item.Estado == "Entregado" || item.Estado == "Facturado" ? "bg-success" : "bg-info text-dark")">
+                                    @item.Estado
+                                </span>
+                            </td>
                             <td>
                                 <!-- FLUJO DE ESTADOS -->
-                                @if (item.Estado == "Pendiente")
+                                @if (item.Estado == "Pendiente" && item.TieneStockReservado)
                                 {
                                     <form asp-action="GenerarPicking" asp-route-id="@item.Id" method="post" style="display:inline;">
                                         <button type="submit" class="btn btn-sm btn-warning text-dark">
                                             <i class="bi bi-box-seam"></i> Preparar (Picking)
                                         </button>
                                     </form>
+                                }
+                                else if (item.Estado == "Pendiente" && !item.TieneStockReservado)
+                                {
+                                    <span class="badge bg-danger" title="No hay stock disponible en almacén">
+                                        <i class="bi bi-exclamation-triangle"></i> Sin Stock (ATP)
+                                    </span>
                                 }
                                 else if (item.Estado == "Picking")
                                 {
@@ -88,7 +98,11 @@
                 }
                 else
                 {
-                    <tr><td colspan="6" class="text-center text-muted py-4">No hay pedidos.</td></tr>
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            No hay pedidos registrados aún.
+                        </td>
+                    </tr>
                 }
             </tbody>
         </table>

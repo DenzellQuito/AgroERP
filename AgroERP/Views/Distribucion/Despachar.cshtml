@@ -14,17 +14,29 @@
     <div class="col-md-6">
         <div class="card shadow-sm">
             <div class="card-body p-4">
+
+                <!-- MENSAJE DE ERROR AMIGABLE -->
+                @if (TempData["Warning"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show">
+                        @TempData["Warning"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
                 <form asp-action="Despachar" method="post">
                     <input type="hidden" name="id" value="@ViewBag.PedidoId" />
 
                     <div class="form-group mb-3">
                         <label class="fw-bold">Placa del Vehículo</label>
-                        <input name="placa" class="form-control" required placeholder="Ej: ABC-123" />
+                        <!-- RECUPERAMOS EL VALOR ANTERIOR -->
+                        <input name="placa" class="form-control" required value="@ViewBag.PlacaAnterior" placeholder="Ej: ABC-123" />
                     </div>
 
                     <div class="form-group mb-4">
                         <label class="fw-bold">Nombre del Chofer</label>
-                        <input name="chofer" class="form-control" required placeholder="Ej: Juan Pérez" />
+                        <!-- RECUPERAMOS EL VALOR ANTERIOR -->
+                        <input name="chofer" class="form-control" required value="@ViewBag.ChoferAnterior" placeholder="Ej: Juan Pérez" />
                     </div>
 
                     <div class="d-grid gap-2">

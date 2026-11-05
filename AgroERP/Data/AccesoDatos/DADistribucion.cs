@@ -17,9 +17,7 @@ public class DADistribucion
         _almacen = almacen;
     }
 
-    // =========================================================
     // 1. FACTURACIÓN 
-    // =========================================================
     public async Task<int> FacturarPedido(int pedidoId, string usuarioId)
     {
         var pedido = await _db.PedidosVenta
@@ -29,47 +27,49 @@ public class DADistribucion
         if (pedido == null) throw new Exception("Pedido no encontrado.");
         if (pedido.EstadoLogistico != "Entregado") throw new Exception("Solo se puede facturar un pedido entregado.");
 
-        // Cálculos redondeados a 2 decimales (céntimos)
         decimal totalFactura = Math.Round(pedido.Total, 2, MidpointRounding.AwayFromZero);
         decimal neto = Math.Round(totalFactura / 1.18m, 2, MidpointRounding.AwayFromZero);
-        decimal igv = totalFactura - neto; // La resta asegura que no haya descuadres por milésimas
+        decimal igv = totalFactura - neto;
 
-        // 1. Crear el Comprobante y GUARDARLO
-        var comprobante = new ComprobantePago
+        // INICIO DE TRANSACCIÓN
+        using var transaction = await _db.Database.BeginTransactionAsync();
+        try
         {
-            PedidoVentaId = pedido.Id,
-            TipoCPE = "Factura",
-            MontoTotal = totalFactura
-        };
+            var comprobante = new ComprobantePago
+            {
+                PedidoVentaId = pedido.Id,
+                TipoCPE = "Factura",
+                MontoTotal = totalFactura
+            };
 
-        _db.ComprobantesPago.Add(comprobante);
-        await _db.SaveChangesAsync();
+            _db.ComprobantesPago.Add(comprobante);
+            // Guardamos temporalmente para generar el ID del comprobante
+            await _db.SaveChangesAsync();
 
-        // FORZAMOS LA LECTURA DEL ID REAL DESDE LA BASE DE DATOS
-        var idRealComprobante = await _db.ComprobantesPago
-            .Where(c => c.PedidoVentaId == pedido.Id)
-            .OrderByDescending(c => c.Id)
-            .Select(c => c.Id)
-            .FirstOrDefaultAsync();
+            await _contabilidad.RegistrarAsiento(
+                modulo: "Factura",
+                referenciaId: comprobante.Id,
+                glosa: $"Facturación Pedido {pedido.Id}",
+                usuarioId: usuarioId,
+                (Cuentas.FacturasPorCobrar, totalFactura, 0m),
+                (Cuentas.VentasProductos, 0m, neto),
+                (Cuentas.IgvPorPagar, 0m, igv)
+            );
 
-        // 2. Registrar el Asiento Contable
-        await _contabilidad.RegistrarAsiento(
-            modulo: "Factura",
-            referenciaId: idRealComprobante,
-            glosa: $"Facturación Pedido {pedido.Id}",
-            usuarioId: usuarioId,
-            (Cuentas.FacturasPorCobrar, totalFactura, 0m), // Debe
-            (Cuentas.VentasProductos, 0m, neto),           // Haber
-            (Cuentas.IgvPorPagar, 0m, igv)                 // Haber
-        );
+            // Guardado final (asiento contable)
+            await _db.SaveChangesAsync();
+            await transaction.CommitAsync();
 
-        await _db.SaveChangesAsync();
-        return comprobante.Id;
+            return comprobante.Id;
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
-    // =========================================================
-    // 2. DEVOLUCIÓN Y NOTA DE CRÉDITO
-    // =========================================================
+    // 2. DEVOLUCIÓN Y NOTA DE CRÉDITO 
     public async Task<int> RegistrarDevolucion(int pedidoId, int articuloId, int loteId, decimal cantidadRechazada, string motivo, string usuarioId)
     {
         var pedido = await _db.PedidosVenta.FindAsync(pedidoId);
@@ -100,7 +100,6 @@ public class DADistribucion
 
             await _almacen.ReingresarDevolucion(devolucion.Id);
 
-            // Cálculos redondeados a 2 decimales
             decimal totalDevolucion = Math.Round(cantidadRechazada * detallePedido.PrecioUnitario, 2, MidpointRounding.AwayFromZero);
             decimal netoDevolucion = Math.Round(totalDevolucion / 1.18m, 2, MidpointRounding.AwayFromZero);
             decimal igvDevolucion = totalDevolucion - netoDevolucion;
@@ -116,7 +115,6 @@ public class DADistribucion
             _db.NotaCredito.Add(notaCredito);
             await _db.SaveChangesAsync();
 
-            // Forzamos lectura del ID real de la nota de crédito
             var idRealNota = await _db.NotaCredito
                 .Where(n => n.DevolucionId == devolucion.Id)
                 .OrderByDescending(n => n.Id)
@@ -145,9 +143,7 @@ public class DADistribucion
         }
     }
 
-    // =========================================================
     // 3. RESERVAR PEDIDO
-    // =========================================================
     public async Task<bool> IntentarReservarPedido(int pedidoId)
     {
         var detalles = await _db.DetallesPedidoVenta
