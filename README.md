@@ -67,7 +67,7 @@ Las tablas están en el esquema **`dbo`** y su nombre es el del `DbSet` (en plur
    - AjusteInventario.TipoAjuste: `Merma` `ConteoPositivo` `ConteoNegativo` (todo conteo debe contener la palabra "Conteo")
    - Entrega de pedidos: al entregar, Díaz debe llenar `PedidoVenta.FechaEntregaReal` (el OTIF solo cuenta pedidos con esa fecha)
    - Recepción: Lavado debe llenar `CantidadPedida` y `CantidadRecibida` en cada `DetalleRecepcion` (de ahí sale el cumplimiento de proveedores)
-
+9. Nunca escribas un Id de usuario en el código (ni USR-002 ni ninguno). Usa siempre el usuario conectado: User.FindFirstValue(ClaimTypes.NameIdentifier).
 ## 6. Catálogos (no insertes a mano)
 Artículos, campañas y recetas se cargan desde las pantallas `/Articulos`, `/Campanias` y `/Recetas`. Proveedores, clientes y almacenes los carga el dueño de cada módulo en su propia pantalla; mientras tanto, usa inserts en SQL para probar.
 
