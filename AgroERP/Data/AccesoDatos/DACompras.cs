@@ -237,22 +237,25 @@ public class DACompras
     }
 
     // ===================== GASTOS LOGÍSTICOS (FLETES) =====================
-    public async Task RegistrarFleteContableAsync(int ordenId, decimal costo, string glosa)
+    public async Task RegistrarFleteContableAsync(int ordenId, decimal costo, string glosa, string usuarioId)
     {
         var cuentaGasto = await _db.Set<PlanCuenta>().FirstOrDefaultAsync(c => c.Codigo == Cuentas.FletesGasto);
+        if (cuentaGasto == null) throw new InvalidOperationException("La cuenta contable de fletes no está configurada.");
+
         var cuentaPasivo = await _db.Set<PlanCuenta>().FirstOrDefaultAsync(c => c.Codigo == Cuentas.FacturasPorPagar);
+        if (cuentaPasivo == null) throw new InvalidOperationException("La cuenta contable de pasivo no está configurada.");
 
         var asiento = new AsientoContable
         {
             FechaContable = DateTime.Now,
             Glosa = glosa,
-            ReferenciaModulo = "Compras", // Texto exacto
+            ReferenciaModulo = "Compras",
             ReferenciaId = ordenId,
-            UsuarioId = "USR-002",
+            UsuarioId = usuarioId, // Ahora usa el parámetro dinámico
             Detalles = new List<AsientoDetalle>
             {
-                new AsientoDetalle { CuentaId = cuentaGasto!.Id, Debe = costo, Haber = 0 },
-                new AsientoDetalle { CuentaId = cuentaPasivo!.Id, Debe = 0, Haber = costo }
+                new AsientoDetalle { CuentaId = cuentaGasto.Id, Debe = costo, Haber = 0 },
+                new AsientoDetalle { CuentaId = cuentaPasivo.Id, Debe = 0, Haber = costo }
             }
         };
 

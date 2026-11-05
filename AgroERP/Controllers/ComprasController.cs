@@ -3,6 +3,7 @@ using AgroERP.ViewModels.Compras;
 using AgroERP.Models.Compras;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace AgroERP.Controllers;
 
@@ -44,13 +45,17 @@ public class ComprasController : Controller
     [HttpPost]
     public async Task<IActionResult> Create(int articuloId, decimal cantidad)
     {
-        // Tu ID fijo como 'changa' según la Regla 3 del README es "USR-002"
-        var detalles = new List<RequerimientoDetalle>
-        {
-            new RequerimientoDetalle { ArticuloId = articuloId, Cantidad = cantidad }
-        };
+        // 1. Obtenemos el usuario conectado dinámicamente
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Challenge();
 
-        await _da.CrearRequerimientoManualAsync("USR-002", detalles);
+        var detalles = new List<RequerimientoDetalle>
+    {
+        new RequerimientoDetalle { ArticuloId = articuloId, Cantidad = cantidad }
+    };
+
+        // 2. Pasamos la variable userId en lugar del texto fijo
+        await _da.CrearRequerimientoManualAsync(userId, detalles);
 
         // Volver a la pantalla principal
         return RedirectToAction(nameof(Index));
@@ -68,6 +73,7 @@ public class ComprasController : Controller
             Id = requerimiento.Id,
             FechaSolicitud = requerimiento.FechaSolicitud.ToString("dd/MM/yyyy HH:mm"),
             Estado = requerimiento.Estado,
+            Solicitante = requerimiento.UsuarioSolicitanteId,
             Articulos = requerimiento.Detalles.Select(d => new ItemRequerimientoViewModel
             {
                 CodigoArticulo = d.Articulo.Codigo,
@@ -223,10 +229,14 @@ public class ComprasController : Controller
     [HttpPost]
     public async Task<IActionResult> RegistrarFlete(FleteViewModel model)
     {
-        await _da.RegistrarFleteContableAsync(model.OrdenCompraId, model.CostoFlete, model.Glosa);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Challenge();
+
+        // Pásale userId como cuarto argumento
+        await _da.RegistrarFleteContableAsync(model.OrdenCompraId, model.CostoFlete, model.Glosa, userId);
+
         return RedirectToAction(nameof(Ordenes));
     }
-
     [HttpGet]
     public async Task<IActionResult> LibroDiario()
     {
