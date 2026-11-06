@@ -1,0 +1,51 @@
+﻿@{
+    ViewData["Title"] = "Emitir Guía de Remisión";
+    Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+    <h2>Emitir Guía de Remisión (Pedido #@ViewBag.PedidoId)</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+
+                <!-- MENSAJE DE ERROR AMIGABLE -->
+                @if (TempData["Warning"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show">
+                        @TempData["Warning"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <form asp-action="Despachar" method="post">
+                    <input type="hidden" name="id" value="@ViewBag.PedidoId" />
+
+                    <div class="form-group mb-3">
+                        <label class="fw-bold">Placa del Vehículo</label>
+                        <!-- RECUPERAMOS EL VALOR ANTERIOR -->
+                        <input name="placa" class="form-control" required value="@ViewBag.PlacaAnterior" placeholder="Ej: ABC-123" />
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label class="fw-bold">Nombre del Chofer</label>
+                        <!-- RECUPERAMOS EL VALOR ANTERIOR -->
+                        <input name="chofer" class="form-control" required value="@ViewBag.ChoferAnterior" placeholder="Ej: Juan Pérez" />
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-truck"></i> Confirmar Salida y Emitir Guía
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

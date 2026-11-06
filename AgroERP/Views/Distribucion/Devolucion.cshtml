@@ -1,0 +1,67 @@
+﻿@model AgroERP.ViewModels.Distribucion.DevolucionViewModel
+@{
+    ViewData["Title"] = "Registrar Devolución";
+    Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+    <h2>Registrar Devolución</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver al Listado
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form asp-action="Devolucion" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="PedidoId" class="control-label fw-bold">Seleccione el Pedido</label>
+                        <select asp-for="PedidoId" class="form-select" asp-items="Model.PedidosDisponibles">
+                            <option value="">-- Seleccione un pedido --</option>
+                        </select>
+                        <span asp-validation-for="PedidoId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="ArticuloId" class="control-label fw-bold">Seleccione el Artículo</label>
+                        <select asp-for="ArticuloId" class="form-select" asp-items="Model.ArticulosDisponibles">
+                            <option value="">-- Seleccione un artículo --</option>
+                        </select>
+                        <span asp-validation-for="ArticuloId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="LoteId" class="control-label fw-bold">Seleccione el Lote</label>
+                        <select asp-for="LoteId" class="form-select" asp-items="Model.LotesDisponibles">
+                            <option value="">-- Seleccione un lote --</option>
+                        </select>
+                        <span asp-validation-for="LoteId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="CantidadRechazada" class="control-label fw-bold">Cantidad a Devolver</label>
+                        <input asp-for="CantidadRechazada" class="form-control" type="number" step="0.01" min="0.01" />
+                        <span asp-validation-for="CantidadRechazada" class="text-danger"></span>
+                        <small class="text-muted">No puede exceder la cantidad original del pedido.</small>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label asp-for="Motivo" class="control-label fw-bold">Motivo</label>
+                        <input asp-for="Motivo" class="form-control" placeholder="Ej: Fresas magulladas" />
+                        <span asp-validation-for="Motivo" class="text-danger"></span>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            <i class="bi bi-x-circle"></i> Procesar Devolución
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

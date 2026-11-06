@@ -1,0 +1,111 @@
+﻿@model AgroERP.ViewModels.Compras.OrdenCompraImpresionViewModel
+
+@{
+    Layout = null; // Sin menú lateral
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <title>Orden de Compra OC-@Model.Id.ToString("D4")</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+            body {
+                background-color: #f8f9fa;
+            }
+
+            .hoja-a4 {
+                background: white;
+                width: 21cm;
+                min-height: 29.7cm;
+                padding: 2cm;
+                margin: 1cm auto;
+                border: 1px solid #ccc;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            }
+
+            @@media print {
+                body {
+                    background: white;
+                    margin: 0;
+                    padding: 0;
+                }
+
+                .hoja-a4 {
+                    width: auto;
+                    margin: 0;
+                    border: none;
+                    box-shadow: none;
+                    padding: 0;
+                }
+            }
+    </style>
+</head>
+<body>
+    <div class="hoja-a4">
+        <div class="d-flex justify-content-between border-bottom pb-3 mb-4">
+            <div>
+                <h2>AGRO ERP</h2>
+                <p class="mb-0 text-muted">Logística Integral - Mi Paraíso Gramadal</p>
+            </div>
+            <div class="text-end">
+                <h4 class="text-primary">ORDEN DE COMPRA</h4>
+                <h5 class="mb-0">Nro. OC-@Model.Id.ToString("D4")</h5>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-sm-6">
+                <h6 class="fw-bold text-secondary">DATOS DEL PROVEEDOR</h6>
+                <strong>Razón Social:</strong> @Model.ProveedorRazonSocial<br>
+                <strong>RUC:</strong> @Model.ProveedorRuc
+            </div>
+            <div class="col-sm-6 text-end">
+                <h6 class="fw-bold text-secondary">CONDICIONES</h6>
+                <strong>Fecha de Emisión:</strong> @Model.FechaEmision<br>
+                <strong>Moneda:</strong> Soles (S/)
+            </div>
+        </div>
+
+        <table class="table table-bordered mb-4">
+            <thead class="table-light">
+                <tr>
+                    <th>Código</th>
+                    <th>Descripción</th>
+                    <th class="text-end">Cant.</th>
+                    <th class="text-end">P. Unit</th>
+                    <th class="text-end">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Detalles)
+                {
+                    <tr>
+                        <td>@item.Codigo</td>
+                        <td>@item.Descripcion</td>
+                        <td class="text-end">@item.Cantidad.ToString("0.00")</td>
+                        <td class="text-end">@item.PrecioUnitario.ToString("0.00")</td>
+                        <td class="text-end">@item.Subtotal.ToString("0.00")</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="4" class="text-end fs-5">TOTAL:</th>
+                    <th class="text-end fs-5">S/ @Model.Total.ToString("0.00")</th>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="text-center text-muted mt-5 pt-5 border-top">
+            <p>Documento generado automáticamente por AgroERP</p>
+        </div>
+    </div>
+
+    <script>
+            // Lanza el cuadro de impresión/PDF automáticamente al cargar
+            window.onload = function() { window.print(); }
+    </script>
+</body>
+</html>

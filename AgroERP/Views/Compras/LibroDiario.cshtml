@@ -1,0 +1,49 @@
+﻿@model IEnumerable<AgroERP.ViewModels.Compras.AsientoDiarioViewModel>
+
+@{
+    ViewData["Title"] = "Libro Diario";
+    Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">Libro Diario (Solo Lectura)</h2>
+
+    @foreach (var asiento in Model)
+    {
+        <div class="card shadow-sm mb-4 border-primary">
+            <div class="card-header bg-primary text-white d-flex justify-content-between">
+                <strong>Asiento #@asiento.Id.ToString("D4") | @asiento.Referencia</strong>
+                <span>@asiento.Fecha</span>
+            </div>
+            <div class="card-body py-2 bg-light">
+                <p class="mb-2 text-muted"><em>Glosa: @asiento.Glosa</em></p>
+                <table class="table table-sm table-bordered bg-white mb-0">
+                    <thead class="table-secondary text-center">
+                        <tr>
+                            <th class="text-start">Cuenta Contable</th>
+                            <th style="width: 15%">Debe (S/)</th>
+                            <th style="width: 15%">Haber (S/)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var detalle in asiento.Detalles)
+                        {
+                            <tr>
+                                <td>@detalle.Cuenta</td>
+                                <td class="text-end text-success">@(detalle.Debe > 0 ? detalle.Debe.ToString("0.00") : "")</td>
+                                <td class="text-end text-danger">@(detalle.Haber > 0 ? detalle.Haber.ToString("0.00") : "")</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="fw-bold bg-light">
+                        <tr>
+                            <td class="text-end">TOTALES:</td>
+                            <td class="text-end">@asiento.Detalles.Sum(d => d.Debe).ToString("0.00")</td>
+                            <td class="text-end">@asiento.Detalles.Sum(d => d.Haber).ToString("0.00")</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    }
+</div>
