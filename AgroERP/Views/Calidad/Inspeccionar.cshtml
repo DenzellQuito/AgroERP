@@ -1,0 +1,82 @@
+﻿@model IEnumerable<AgroERP.ViewModels.Calidad.InspeccionListViewModel>
+@{
+    ViewData["Title"] = "Inspección";
+    Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
+}
+
+<h2 class="mt-3">Inspección de Calidad</h2>
+<hr />
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning">@TempData["Warning"]</div>
+}
+
+<table class="table table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Lote</th>
+            <th>Artículo</th>
+            <th>Cant. Recibida</th>
+            <th>Proveedor</th>
+            <th>Guía</th>
+            <th>Acción</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.NumeroLote</td>
+                <td>@item.Articulo</td>
+                <td>@item.CantidadRecibida</td>
+                <td>@item.Proveedor</td>
+                <td>@item.GuiaProveedor</td>
+                <td>
+                    <form asp-action="GuardarInspeccion" method="post" class="d-flex gap-2" onsubmit="return validarFormulario(this)">
+                        <input type="hidden" name="detalleId" value="@item.DetalleId" />
+
+                        <select name="esConforme" class="form-select form-select-sm" style="width: 110px;" onchange="toggleMotivo(this)">
+                            <option value="true">Liberar</option>
+                            <option value="false">Rechazar</option>
+                        </select>
+
+                        <select name="zonaId" class="form-select form-select-sm" style="width: 150px;" required>
+                            <option value="">-- Zona --</option>
+                            @foreach (var zona in ViewBag.Zonas as List<AgroERP.Models.Calidad_WMS.ZonaUbicacion>)
+                            {
+                                <option value="@zona.Id">@zona.CodigoUbicacion</option>
+                            }
+                        </select>
+
+                        <input name="motivoRechazo" class="form-control form-control-sm motivo-input" placeholder="Motivo" disabled />
+                        <button type="submit" class="btn btn-sm btn-primary">Procesar</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <script>
+        function toggleMotivo(selectElement) {
+            var form = selectElement.closest('form');
+            var motivoInput = form.querySelector('.motivo-input');
+            if (selectElement.value === "false") { motivoInput.disabled = false; motivoInput.required = true; }
+            else { motivoInput.disabled = true; motivoInput.required = false; motivoInput.value = ""; }
+        }
+        function validarFormulario(form) {
+            var select = form.querySelector('select[name="esConforme"]');
+            var motivo = form.querySelector('.motivo-input');
+            if (select.value === "false" && motivo.value.trim() === "") {
+                alert("Debe ingresar un motivo para rechazar el lote.");
+                return false;
+            }
+            return true;
+        }
+    </script>
+}
