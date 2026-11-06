@@ -35,3 +35,11 @@
         </div>
     </div>
 </div>
+<script>
+    // Esto bloquea el botón apenas el usuario le da clic
+    document.querySelector("form").addEventListener("submit", function() {
+        var btn = this.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.innerHTML = "Guardando...";
+    });
+</script>
