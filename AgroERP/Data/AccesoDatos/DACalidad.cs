@@ -1,12 +1,14 @@
 using AgroERP.Models.Calidad_WMS;
 using AgroERP.Models.Compras;
 using AgroERP.Models.Contabilidad;
+using AgroERP.ViewModels.Calidad;
 using Microsoft.EntityFrameworkCore;
 
 namespace AgroERP.Data.AccesoDatos;
 
 /// DUEÑO: George Lavado. Tablas que escribe: RecepcionMercaderia, RecepcionDetalle, Lote, InspeccionCalidad.
 /// REGLA: solo este DAO cambia Lote.EstadoCalidad (Cuarentena -> Liberado / Rechazado).
+
 public class DACalidad
 {
     private readonly ApplicationDbContext _db;
@@ -22,62 +24,60 @@ public class DACalidad
         _compras = compras;
     }
 
-    // 1. REGISTRAR RECEPCIÓN
-    public async Task<int> RegistrarRecepcion(int ordenCompraId, string guiaProveedor, string usuarioId)
+    // 1. REGISTRAR RECEPCIÓN (3-Way Matching Manual)
+    public async Task<int> RegistrarRecepcion(RegistrarRecepcionViewModel model, string usuarioId)
     {
-        var oc = await _db.OrdenesCompra.Include(o => o.Detalles).FirstOrDefaultAsync(o => o.Id == ordenCompraId);
+        var oc = await _db.OrdenesCompra.Include(o => o.Detalles).FirstOrDefaultAsync(o => o.Id == model.OrdenCompraId);
         if (oc == null) throw new Exception("Orden de Compra no encontrada.");
 
-        // VALIDACIÓN DE SEGURIDAD: Evita doble recepción de la misma orden
         if (oc.Estado != "Emitida") throw new Exception("Esta Orden de Compra ya fue procesada o no está disponible para recepción.");
 
-        // VALIDACIÓN NUEVA: Evita guías duplicadas
-        var guiaExistente = await _db.RecepcionesMercaderia.AnyAsync(r => r.GuiaProveedor == guiaProveedor);
-        if (guiaExistente) throw new Exception($"La guía '{guiaProveedor}' ya fue registrada en el sistema. Verifique el número.");
+        // 🔥 VALIDACIÓN EXTREMA: Evita que una OC ya recibida (aprobada o rechazada) vuelva a entrar
+        var yaTieneRecepcion = await _db.RecepcionesMercaderia.AnyAsync(r => r.OrdenCompraId == model.OrdenCompraId);
+        if (yaTieneRecepcion)
+            throw new Exception("Esta Orden de Compra ya tiene una recepción registrada. Debe generar una nueva OC para recibir más mercadería.");
+
+        var guiaExistente = await _db.RecepcionesMercaderia.AnyAsync(r => r.GuiaProveedor == model.GuiaProveedor);
+        if (guiaExistente) throw new Exception($"La guía '{model.GuiaProveedor}' ya fue registrada en el sistema. Verifique el número.");
 
         var recepcion = new RecepcionMercaderia
         {
-            OrdenCompraId = ordenCompraId,
-            GuiaProveedor = guiaProveedor,
+            OrdenCompraId = model.OrdenCompraId,
+            GuiaProveedor = model.GuiaProveedor,
             FechaRecepcion = DateTime.Now,
             UsuarioReceptorId = usuarioId,
             Estado = "EnProceso",
             Detalles = new List<RecepcionDetalle>()
         };
 
-        foreach (var detOc in oc.Detalles)
+        foreach (var detModel in model.Detalles)
         {
-            var lote = new Lote
+            var nuevoLote = new Lote
             {
-                ArticuloId = detOc.ArticuloId,
-                NumeroLote = $"LOT-{DateTime.Now:yyyyMMdd}-{new Random().Next(100, 999)}",
-                FechaVencimiento = DateTime.Now.AddMonths(6),
+                ArticuloId = detModel.ArticuloId,
+                NumeroLote = detModel.NumeroLote,
+                FechaVencimiento = detModel.FechaVencimiento,
                 EstadoCalidad = "Cuarentena"
             };
-            _db.Lotes.Add(lote);
-            await _db.SaveChangesAsync(); // Guardamos para obtener el LoteId
 
             recepcion.Detalles.Add(new RecepcionDetalle
             {
-                ArticuloId = detOc.ArticuloId,
-                LoteId = lote.Id,
-                CantidadPedida = detOc.CantidadPedida,
-                CantidadGuia = detOc.CantidadPedida,
-                CantidadRecibida = detOc.CantidadPedida
+                ArticuloId = detModel.ArticuloId,
+                Lote = nuevoLote, // Asignación por navegación
+                CantidadPedida = detModel.CantidadPedida,
+                CantidadGuia = detModel.CantidadGuia,
+                CantidadRecibida = detModel.CantidadRecibida
             });
         }
 
         _db.RecepcionesMercaderia.Add(recepcion);
 
-        // Cerramos la Orden de Compra
-        oc.Estado = "Cerrada";
-
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(); // UN SOLO SaveChanges
         return recepcion.Id;
     }
 
-    // 2. INSPECCIÓN DE CALIDAD (Liberar o Rechazar)
-    public async Task InspeccionarLote(int recepcionDetalleId, bool esConforme, string? motivoRechazo, string usuarioId)
+    // 2. INSPECCIÓN DE CALIDAD (Liberar / Rechazar)
+    public async Task InspeccionarLote(int recepcionDetalleId, bool esConforme, string? motivoRechazo, int zonaId, string usuarioId)
     {
         var detalle = await _db.DetallesRecepcion
             .Include(d => d.Lote)
@@ -87,33 +87,35 @@ public class DACalidad
         if (detalle == null) throw new Exception("Detalle de recepción no encontrado.");
         if (detalle.Lote.EstadoCalidad != "Cuarentena") throw new Exception("Este lote ya fue inspeccionado.");
 
-        var inspeccion = new InspeccionCalidad
+        _db.InspeccionesCalidad.Add(new InspeccionCalidad
         {
             LoteId = detalle.LoteId,
             UsuarioInspectorId = usuarioId,
             EsConforme = esConforme,
             MotivoRechazo = motivoRechazo
-        };
-        _db.InspeccionesCalidad.Add(inspeccion);
+        });
 
         if (esConforme)
         {
             detalle.Lote.EstadoCalidad = "Liberado";
 
-            var zonaId = await _db.ZonasUbicacion.Select(z => z.Id).FirstOrDefaultAsync();
-            if (zonaId == 0) throw new Exception("No hay zonas de ubicación creadas. Crea una en Almacén primero.");
-
-            // Avisamos a Méndez para que ingrese el stock
             await _almacen.RegistrarIngreso(detalle.LoteId, zonaId, detalle.CantidadRecibida, $"OC-{detalle.Recepcion.OrdenCompraId}");
 
-            // Avisamos a Quito para el asiento contable
-            decimal monto = detalle.CantidadRecibida * 10m;
+            var precio = await _db.DetallesOrdenCompra
+                .Where(d => d.OrdenCompraId == detalle.Recepcion.OrdenCompraId && d.ArticuloId == detalle.ArticuloId)
+                .Select(d => d.PrecioUnitario).FirstOrDefaultAsync();
+
+            decimal monto = Math.Round(detalle.CantidadRecibida * precio, 2, MidpointRounding.AwayFromZero);
+
+            var articulo = await _db.Articulos.FindAsync(detalle.ArticuloId);
+            string cuentaDebe = articulo?.Tipo == "Empaque" ? Cuentas.Envases : Cuentas.MaterialesAux;
+
             await _contabilidad.RegistrarAsiento(
                 modulo: "Recepcion",
                 referenciaId: detalle.RecepcionId,
                 glosa: $"Recepción conforme Lote {detalle.Lote.NumeroLote}",
                 usuarioId: usuarioId,
-                (Cuentas.MaterialesAux, monto, 0m),
+                (cuentaDebe, monto, 0m),
                 (Cuentas.FacturasPorPagar, 0m, monto)
             );
         }
@@ -123,5 +125,18 @@ public class DACalidad
         }
 
         await _db.SaveChangesAsync();
+
+        var recepcion = detalle.Recepcion;
+        var todosDetalles = await _db.DetallesRecepcion.Include(d => d.Lote).Where(d => d.RecepcionId == recepcion.Id).ToListAsync();
+
+        if (!todosDetalles.Any(d => d.Lote.EstadoCalidad == "Cuarentena"))
+        {
+            recepcion.Estado = "Cerrada";
+
+            bool parcial = todosDetalles.Any(d => d.Lote.EstadoCalidad == "Rechazado" || d.CantidadRecibida < d.CantidadPedida);
+
+            await _compras.MarcarOrdenRecepcionada(recepcion.OrdenCompraId, parcial);
+            await _db.SaveChangesAsync();
+        }
     }
 }

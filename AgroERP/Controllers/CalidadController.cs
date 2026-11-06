@@ -1,5 +1,6 @@
 using AgroERP.Data;
 using AgroERP.Data.AccesoDatos;
+using AgroERP.Models.Calidad_WMS;
 using AgroERP.ViewModels.Calidad;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,7 +21,6 @@ public class CalidadController : Controller
         _db = db;
     }
 
-    // 1. LISTADO DE ÓRDENES DE COMPRA (Solo 'Emitidas')
     public async Task<IActionResult> Index()
     {
         var ordenes = await _db.OrdenesCompra
@@ -39,22 +39,52 @@ public class CalidadController : Controller
         return View(ordenes);
     }
 
-    // 2. REGISTRAR LA RECEPCIÓN (Con Guía Manual)
-    [HttpPost]
-    public async Task<IActionResult> RegistrarRecepcion(int ordenCompraId, string guiaProveedor)
+    // GET: Formulario 3-Way Matching
+    public async Task<IActionResult> RegistrarRecepcion(int id)
     {
+        var oc = await _db.OrdenesCompra.Include(o => o.Detalles).ThenInclude(d => d.Articulo).FirstOrDefaultAsync(o => o.Id == id);
+        if (oc == null) return NotFound();
+
+        var model = new RegistrarRecepcionViewModel
+        {
+            OrdenCompraId = oc.Id,
+            Detalles = oc.Detalles.Select(d => new DetalleRecepcionViewModel
+            {
+                ArticuloId = d.ArticuloId,
+                NombreArticulo = d.Articulo.Nombre,
+                CantidadPedida = d.CantidadPedida,
+                CantidadGuia = d.CantidadPedida, // Precargado
+                CantidadRecibida = d.CantidadPedida, // Precargado
+                FechaVencimiento = DateTime.Now.AddMonths(6)
+            }).ToList()
+        };
+
+        return View(model);
+    }
+
+    // POST: Guardar Recepción
+    [HttpPost]
+    public async Task<IActionResult> RegistrarRecepcion(RegistrarRecepcionViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            var oc = await _db.OrdenesCompra.Include(o => o.Detalles).ThenInclude(d => d.Articulo).FirstOrDefaultAsync(o => o.Id == model.OrdenCompraId);
+            for (int i = 0; i < model.Detalles.Count; i++)
+                model.Detalles[i].NombreArticulo = oc.Detalles.ElementAt(i).Articulo.Nombre;
+            return View(model);
+        }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Challenge();
+
         try
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "USR-003";
+            await _da.RegistrarRecepcion(model, userId);
 
-            if (string.IsNullOrWhiteSpace(guiaProveedor))
-            {
-                TempData["Warning"] = "Debe ingresar el número de guía del proveedor.";
-                return RedirectToAction(nameof(Index));
-            }
+            var hayDiferencias = model.Detalles.Any(d => d.CantidadGuia != d.CantidadPedida || d.CantidadRecibida != d.CantidadGuia);
+            if (hayDiferencias) TempData["Warning"] = "Recepción registrada con diferencias en las cantidades. Revise el 3-way matching.";
+            else TempData["Success"] = "Recepción registrada conforme.";
 
-            await _da.RegistrarRecepcion(ordenCompraId, guiaProveedor, userId);
-            TempData["Success"] = "Recepción registrada. Los lotes están en Cuarentena.";
             return RedirectToAction(nameof(Inspeccionar));
         }
         catch (Exception ex)
@@ -64,7 +94,6 @@ public class CalidadController : Controller
         }
     }
 
-    // 3. LISTADO DE LOTES EN CUARENTENA
     public async Task<IActionResult> Inspeccionar()
     {
         var detalles = await _db.DetallesRecepcion
@@ -78,28 +107,29 @@ public class CalidadController : Controller
                 Articulo = d.Lote.Articulo.Nombre,
                 CantidadRecibida = d.CantidadRecibida,
                 Proveedor = d.Recepcion.OrdenCompra.Proveedor.RazonSocial,
-                GuiaProveedor = d.Recepcion.GuiaProveedor // Mapeamos el nuevo dato
+                GuiaProveedor = d.Recepcion.GuiaProveedor
             })
             .ToListAsync();
 
+        ViewBag.Zonas = await _db.ZonasUbicacion.ToListAsync();
         return View(detalles);
     }
 
-    // 4. GUARDAR LA INSPECCIÓN (Con validación de motivo)
     [HttpPost]
-    public async Task<IActionResult> GuardarInspeccion(int detalleId, bool esConforme, string motivoRechazo)
+    public async Task<IActionResult> GuardarInspeccion(int detalleId, bool esConforme, string motivoRechazo, int zonaId)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Challenge();
+
         try
         {
-            // VALIDACIÓN DE SEGURIDAD: Si rechaza, el motivo es obligatorio
             if (!esConforme && string.IsNullOrWhiteSpace(motivoRechazo))
             {
                 TempData["Warning"] = "Debe ingresar un motivo para rechazar el lote.";
                 return RedirectToAction(nameof(Inspeccionar));
             }
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "USR-003";
-            await _da.InspeccionarLote(detalleId, esConforme, motivoRechazo, userId);
+            await _da.InspeccionarLote(detalleId, esConforme, motivoRechazo, zonaId, userId);
 
             if (esConforme) TempData["Success"] = "Lote LIBERADO. Stock ingresado y asiento contable generado.";
             else TempData["Warning"] = "Lote RECHAZADO. No se ingresó stock.";
