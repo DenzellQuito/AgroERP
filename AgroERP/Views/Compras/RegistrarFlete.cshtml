@@ -14,7 +14,7 @@
 
     <div class="card shadow-sm" style="max-width: 600px;">
         <div class="card-body">
-            <form asp-action="RegistrarFlete" method="post">
+            <form asp-action="RegistrarFlete" method="post" id="frmFlete">
                 <input type="hidden" asp-for="OrdenCompraId" />
 
                 <div class="mb-3">
@@ -29,9 +29,22 @@
 
                 <div class="d-flex justify-content-between mt-4">
                     <a href="@Url.Action("Ordenes")" class="btn btn-secondary">Cancelar</a>
-                    <button type="submit" class="btn btn-success">Guardar y Contabilizar</button>
+                    <button type="submit" id="btnGuardarFlete" class="btn btn-success">Guardar y Contabilizar</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+    // Ahora busca exactamente por el ID del formulario
+    document.getElementById("frmFlete").addEventListener("submit", function() {
+        var btn = document.getElementById("btnGuardarFlete");
+
+        // El setTimeout(..., 10) asegura que el form arranque su envío antes de bloquear el botón visualmente
+        setTimeout(function() {
+            btn.disabled = true;
+            btn.innerHTML = "Guardando...";
+        }, 10);
+    });
+</script>

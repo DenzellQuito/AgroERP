@@ -3,6 +3,7 @@ using AgroERP.Models.MRP_IA; // Agregado para poder leer la clase NecesidadMrp d
 using Microsoft.EntityFrameworkCore;
 using AgroERP.Models.Maestros;
 using AgroERP.Models.Contabilidad;
+using AgroERP.Models.BI_Gestion;
 
 namespace AgroERP.Data.AccesoDatos;
 
@@ -260,8 +261,17 @@ public class DACompras
         };
 
         _db.Set<AsientoContable>().Add(asiento);
+
+        _db.Set<GastoLogistico>().Add(new GastoLogistico
+        {
+            Concepto = $"Flete OC-{ordenId:D4}",
+            Monto = costo,
+            FechaRegistro = DateTime.Now
+        });
+
         await _db.SaveChangesAsync();
     }
+    
 
     // ===================== VISTAS CONTABLES =====================
     public async Task<List<PlanCuenta>> ObtenerPlanCuentasAsync()
