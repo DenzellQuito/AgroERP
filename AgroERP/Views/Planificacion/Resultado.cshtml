@@ -6,7 +6,8 @@
 <h2>Resultado MRP – @Model.Campania</h2>
 @if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
 @if (TempData["Ok"] != null) { <div class="alert alert-success">@TempData["Ok"]</div> }
-<p><strong>Cosecha estimada (IA):</strong> @Model.VolumenCosechaEstimado.ToString("N0") jabas
+<p>
+    <strong>Cosecha estimada (IA):</strong> @Model.VolumenCosechaEstimado.ToString("N0") jabas = @(Model.VolumenCosechaEstimado*8) KG de fresa
    <span class="text-muted">· calculado @Model.FechaCalculo.ToString("dd/MM/yyyy HH:mm")</span></p>
 <table class="table">
     <thead><tr><th>Insumo</th><th>Cantidad neta sugerida</th><th>Estado</th></tr></thead>
