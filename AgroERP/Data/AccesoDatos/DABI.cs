@@ -120,7 +120,7 @@ public class DABI
             .Where(p => p.FechaEntregaReal != null && p.FechaPedido >= desde)
             .Select(p => new
             {
-                ATiempo = p.FechaEntregaReal <= p.FechaPromesaEntrega,
+                ATiempo = p.FechaEntregaReal!.Value.Date <= p.FechaPromesaEntrega.Date,
                 ConDev = _db.DevolucionesCliente.Any(x => x.PedidoVentaId == p.Id)
             }).ToListAsync();
         if (e.Count == 0) return null;
@@ -137,13 +137,15 @@ public class DABI
         return 100m * l.Count(x => x) / l.Count;
     }
 
-    /// Rotación = salidas del período / stock físico actual. Dueño de datos: Méndez (TipoMovimiento = "Salida").
+    /// Rotación = salidas del período / stock físico actual (Evaluado sobre Producto Terminado: Fresa). Dueño de datos: Méndez.
     private async Task<decimal?> Rotacion(DateTime desde)
     {
         var salidas = await _db.MovimientosKardex
-            .Where(m => m.TipoMovimiento == "Salida" && m.Fecha >= desde)
+            .Where(m => m.TipoMovimiento == "Salida" && m.Fecha >= desde && m.Lote.Articulo.Tipo == "Fresa")
             .SumAsync(m => (decimal?)m.Cantidad) ?? 0;
-        var stock = await _db.InventariosExistencia.SumAsync(i => (decimal?)i.CantidadFisica) ?? 0;
+        var stock = await _db.InventariosExistencia
+            .Where(i => i.Lote.Articulo.Tipo == "Fresa")
+            .SumAsync(i => (decimal?)i.CantidadFisica) ?? 0;
         if (stock <= 0 || salidas == 0) return null;
         return Math.Abs(salidas) / stock;
     }
@@ -194,7 +196,7 @@ public class DABI
             .Select(p => new
             {
                 Fecha = p.FechaEntregaReal!.Value,
-                ATiempo = p.FechaEntregaReal <= p.FechaPromesaEntrega,
+                ATiempo = p.FechaEntregaReal!.Value.Date <= p.FechaPromesaEntrega.Date,
                 ConDev = _db.DevolucionesCliente.Any(x => x.PedidoVentaId == p.Id)
             }).ToListAsync();
         return ms.Select(m =>

@@ -80,8 +80,8 @@
             <!-- Reemplaza con el ícono de tu tractor/camión -->
             <i class="bi bi-truck fs-3"></i>
             <div>
-                <h5 class="mb-0 fw-bold">AGRO ERP</h5>
-                <small class="text-white-50">Logística Integral</small>
+                <a class="navbar-brand text-success fw-bold" href="/Home/Index"><h5 class="mb-0 fw-bold">AGRO ERP</h5></a>
+                <a class="navbar-brand text-success fw-bold" href="/Home/Index"><small class="text-white-50">Logística Integral</small></a>
             </div>
         </div>
 
@@ -111,6 +111,7 @@
             <!-- 3. Recepción y Calidad -->
             <li>
                 <a href="/Calidad/Index"><i class="bi bi-clipboard-check"></i> Recepción y Calidad</a>
+                <a asp-controller="Calidad" asp-action="Inspeccionar">Inspección</a>
             </li>
 
             <!-- 4. Almacenes e Inventarios -->
