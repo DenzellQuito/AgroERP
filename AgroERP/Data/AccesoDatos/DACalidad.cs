@@ -32,7 +32,7 @@ public class DACalidad
 
         if (oc.Estado != "Emitida") throw new Exception("Esta Orden de Compra ya fue procesada o no está disponible para recepción.");
 
-        // 🔥 VALIDACIÓN EXTREMA: Evita que una OC ya recibida (aprobada o rechazada) vuelva a entrar
+        // VALIDACIÓN EXTREMA: Evita que una OC ya recibida vuelva a entrar
         var yaTieneRecepcion = await _db.RecepcionesMercaderia.AnyAsync(r => r.OrdenCompraId == model.OrdenCompraId);
         if (yaTieneRecepcion)
             throw new Exception("Esta Orden de Compra ya tiene una recepción registrada. Debe generar una nueva OC para recibir más mercadería.");
@@ -63,16 +63,16 @@ public class DACalidad
             recepcion.Detalles.Add(new RecepcionDetalle
             {
                 ArticuloId = detModel.ArticuloId,
-                Lote = nuevoLote, // Asignación por navegación
+                Lote = nuevoLote, // Asignación por navegación (Punto 4)
                 CantidadPedida = detModel.CantidadPedida,
-                CantidadGuia = detModel.CantidadGuia,
-                CantidadRecibida = detModel.CantidadRecibida
+                CantidadGuia = detModel.CantidadGuia, // Punto 1
+                CantidadRecibida = detModel.CantidadRecibida // Punto 1
             });
         }
 
         _db.RecepcionesMercaderia.Add(recepcion);
 
-        await _db.SaveChangesAsync(); // UN SOLO SaveChanges
+        await _db.SaveChangesAsync(); // UN SOLO SaveChanges (Punto 4)
         return recepcion.Id;
     }
 
@@ -101,12 +101,14 @@ public class DACalidad
 
             await _almacen.RegistrarIngreso(detalle.LoteId, zonaId, detalle.CantidadRecibida, $"OC-{detalle.Recepcion.OrdenCompraId}");
 
+            // PUNTO 2: Monto real de la OC
             var precio = await _db.DetallesOrdenCompra
                 .Where(d => d.OrdenCompraId == detalle.Recepcion.OrdenCompraId && d.ArticuloId == detalle.ArticuloId)
                 .Select(d => d.PrecioUnitario).FirstOrDefaultAsync();
 
             decimal monto = Math.Round(detalle.CantidadRecibida * precio, 2, MidpointRounding.AwayFromZero);
 
+            // PUNTO 6: Cuenta contable según el tipo de artículo
             var articulo = await _db.Articulos.FindAsync(detalle.ArticuloId);
             string cuentaDebe = articulo?.Tipo == "Empaque" ? Cuentas.Envases : Cuentas.MaterialesAux;
 
@@ -126,6 +128,7 @@ public class DACalidad
 
         await _db.SaveChangesAsync();
 
+        // PUNTO 3: Cierre de la OC a través de DACompras
         var recepcion = detalle.Recepcion;
         var todosDetalles = await _db.DetallesRecepcion.Include(d => d.Lote).Where(d => d.RecepcionId == recepcion.Id).ToListAsync();
 
