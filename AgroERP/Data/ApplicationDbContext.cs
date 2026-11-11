@@ -1,10 +1,12 @@
-﻿using AgroERP.Models.Calidad_WMS;
+﻿using AgroERP.Models.ActivosFijos;
 using AgroERP.Models.BI_Gestion;
+using AgroERP.Models.Calidad_WMS;
 using AgroERP.Models.Compras;
 using AgroERP.Models.Contabilidad;
 using AgroERP.Models.Distribucion;
 using AgroERP.Models.Maestros;
 using AgroERP.Models.MRP_IA;
+using AgroERP.Models.Tesoreria;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -51,6 +53,20 @@ namespace AgroERP.Data
         public DbSet<PronosticoDemanda> PronosticosDemanda { get; set; }
         public DbSet<RecetaAgricolaBOM> RecetasAgricolasBOM { get; set; }
         public DbSet<NecesidadMrp> NecesidadesMrp { get; set; }
+
+        // === FASE 2: TESORERÍA Y ACTIVOS FIJOS ===
+        public DbSet<CuentaBancaria> CuentasBancarias => Set<CuentaBancaria>();
+        public DbSet<MovimientoBancario> MovimientosBancarios => Set<MovimientoBancario>();
+        public DbSet<ConciliacionBancaria> ConciliacionesBancarias => Set<ConciliacionBancaria>();
+        public DbSet<CuentaPorCobrar> CuentasPorCobrar => Set<CuentaPorCobrar>();
+        public DbSet<CobranzaCliente> CobranzasCliente => Set<CobranzaCliente>();
+        public DbSet<CuentaPorPagar> CuentasPorPagar => Set<CuentaPorPagar>();
+        public DbSet<PagoProveedor> PagosProveedor => Set<PagoProveedor>();
+        public DbSet<ActivoFijo> ActivosFijos => Set<ActivoFijo>();
+        public DbSet<DepreciacionActivo> DepreciacionesActivo => Set<DepreciacionActivo>();
+        public DbSet<TransferenciaActivo> TransferenciasActivo => Set<TransferenciaActivo>();
+        public DbSet<MantenimientoActivo> MantenimientosActivo => Set<MantenimientoActivo>();
+        public DbSet<BajaActivo> BajasActivo => Set<BajaActivo>();
 
 
         protected override void OnModelCreating(ModelBuilder builder)

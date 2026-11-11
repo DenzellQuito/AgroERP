@@ -25,7 +25,7 @@ public class Lote
     public Articulo Articulo { get; set; } = null!;
     public string NumeroLote { get; set; } = null!;
     public DateTime FechaVencimiento { get; set; }       // columna tipo date (FEFO)
-    public string EstadoCalidad { get; set; } = null!;  // Cuarentena | Aceptado | Rechazado
+    public string EstadoCalidad { get; set; } = null!;  // `Cuarentena` `Liberado` `Rechazado`
 }
 
 public class RecepcionMercaderia
@@ -85,7 +85,7 @@ public class ReservaInventario
     public int ZonaUbicacionId { get; set; }
     public ZonaUbicacion ZonaUbicacion { get; set; } = null!;
     public decimal Cantidad { get; set; }                // (18,4)
-    public string Estado { get; set; } = null!;         // Activa | Inactiva
+    public string Estado { get; set; } = null!;         // `Activa` `Consumida` `Liberada`
 }
 
 public class MovimientoKardex
