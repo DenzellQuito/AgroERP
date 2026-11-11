@@ -1,0 +1,245 @@
+﻿@model AgroERP.ViewModels.Tesoreria.ConciliarCuentaVM
+@{
+    Layout = "~/Views/Shared/_LayoutContabilidad.cshtml";
+    ViewData["Title"] = "Conciliación Bancaria - " + Model.Banco;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h5 class="fw-bold mb-0"><i class="bi bi-check2-square text-primary me-2"></i>Conciliación Bancaria: @Model.Banco (@Model.NumeroCuenta)</h5>
+        <small class="text-muted">Emparejamiento de movimientos (Banco vs. ERP), registro de comisiones (6391 vs 1041) y cierre de corte</small>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Volver a Tesorería
+    </a>
+</div>
+
+@if (TempData["Ok"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show shadow-sm">
+        <i class="bi bi-check-circle-fill me-2"></i>@TempData["Ok"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show shadow-sm">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<form asp-action="EjecutarConciliacion" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="CuentaBancariaId" />
+    <input type="hidden" id="hdnSaldoContableERP" value="@Model.SaldoContableActual.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" />
+
+    <div class="row g-4">
+        <!-- COLUMNA IZQUIERDA: FORMULARIO DE CORTE Y CALCULADORA EN VIVO -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-dark text-white py-3">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-calculator me-2"></i>1. Datos del Extracto Bancario y Ajustes</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-light border d-flex justify-content-between align-items-center mb-3">
+                        <span>Saldo Contable Actual en ERP:</span>
+                        <strong class="fs-5 text-primary">S/ @Model.SaldoContableActual.ToString("N2")</strong>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Fecha de Corte del Extracto</label>
+                        <input type="date" asp-for="FechaCorte" class="form-control" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Saldo según Extracto Bancario (S/)</label>
+                        <input type="number" step="0.01" asp-for="SaldoExtractoBanco" id="txtExtracto" class="form-control calc-input" required />
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">(+) Depósitos en Tránsito (S/)</label>
+                            <input type="number" step="0.01" min="0" asp-for="DepositosEnTransito" id="txtTransito" class="form-control calc-input" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">(-) Pagos Pendientes (S/)</label>
+                            <input type="number" step="0.01" min="0" asp-for="PagosPendientes" id="txtPendientes" class="form-control calc-input" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-danger">(-) Comisiones / Gastos del Extracto no registrados en ERP (S/)</label>
+                        <input type="number" step="0.01" min="0" asp-for="ComisionesBancarias" id="txtComisiones" class="form-control calc-input border-danger" />
+                        <small class="text-muted">Si es mayor a 0, genera asiento automático: <strong>Debe 6391 / Haber 1041</strong>.</small>
+                    </div>
+
+                    <!-- RESUMEN DE CUADRE EN VIVO -->
+                    <div class="p-3 rounded bg-light border mb-3">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>Saldo Banco Ajustado (Extracto + Tránsito - Pendientes):</span>
+                            <strong id="lblSaldoBancoAjustado">S/ 0.00</strong>
+                        </div>
+                        <div class="d-flex justify-content-between small mb-2">
+                            <span>Saldo Libros ERP Ajustado (Saldo ERP - Comisiones):</span>
+                            <strong id="lblSaldoErpAjustado">S/ 0.00</strong>
+                        </div>
+                        <hr class="my-2" />
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold">Diferencia por Conciliar:</span>
+                            <span id="badgeDiferencia" class="badge bg-success fs-6">S/ 0.00 (Cuadrado)</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 fw-bold py-2">
+                        <i class="bi bi-check2-all me-1"></i>Confirmar, Contabilizar Ajuste y Cerrar Conciliación
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: EMPAREJAMIENTO DE MOVIMIENTOS E HISTORIAL -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-list-check me-2 text-primary"></i>2. Emparejar Movimientos Pendientes (ERP vs. Banco)</h6>
+                    <span class="badge bg-warning text-dark">@Model.MovimientosPendientes.Count sin conciliar</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-center" style="width: 45px;">
+                                    <input type="checkbox" id="chkTodos" class="form-check-input" title="Seleccionar todos" checked />
+                                </th>
+                                <th>Fecha</th>
+                                <th>Tipo</th>
+                                <th>Nro. Operación / Ref.</th>
+                                <th class="text-end">Importe</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.MovimientosPendientes.Any())
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        Todos los movimientos actuales de esta cuenta ya están conciliados.
+                                    </td>
+                                </tr>
+                            }
+                            @foreach (var m in Model.MovimientosPendientes)
+                            {
+                                <tr>
+                                    <td class="text-center">
+                                        <input type="checkbox" name="MovimientosSeleccionadosIds" value="@m.Id" class="form-check-input chk-mov" checked />
+                                    </td>
+                                    <td class="small">@m.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>
+                                        <span class="badge @(m.TipoMovimiento == "Ingreso" ? "bg-success" : "bg-danger")">@m.TipoMovimiento</span>
+                                    </td>
+                                    <td class="small">
+                                        <strong>@m.NumeroOperacion</strong>
+                                        <span class="text-muted">(@m.MedioPago · @m.ReferenciaDocumento)</span>
+                                    </td>
+                                    <td class="text-end fw-bold @(m.TipoMovimiento == "Ingreso" ? "text-success" : "text-danger")">
+                                        @(m.TipoMovimiento == "Ingreso" ? "+" : "-") S/ @m.Monto.ToString("N2")
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- HISTORIAL DE CONCILIACIONES DE ESTA CUENTA -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-secondary"></i>Historial de Cortes Conciliados en esta Cuenta</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Fecha Corte</th>
+                                <th class="text-end">Extracto</th>
+                                <th class="text-end">(+) Tránsito</th>
+                                <th class="text-end">(-) Pendientes</th>
+                                <th class="text-end">(-) Comisión</th>
+                                <th class="text-end">Saldo Conciliado</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.HistorialConciliaciones.Any())
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-3">Sin conciliaciones previas.</td>
+                                </tr>
+                            }
+                            @foreach (var h in Model.HistorialConciliaciones)
+                            {
+                                <tr>
+                                    <td class="small">@h.FechaCorte.ToString("dd/MM/yyyy")</td>
+                                    <td class="text-end small">S/ @h.SaldoExtractoBanco.ToString("N2")</td>
+                                    <td class="text-end small">S/ @h.DepositosEnTransito.ToString("N2")</td>
+                                    <td class="text-end small">S/ @h.PagosPendientes.ToString("N2")</td>
+                                    <td class="text-end small text-danger">S/ @h.ComisionesBancarias.ToString("N2")</td>
+                                    <td class="text-end fw-bold small text-success">S/ @h.SaldoContableAjustado.ToString("N2")</td>
+                                    <td><span class="badge bg-success">@h.Estado</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        (function () {
+            const saldoErpBase = parseFloat(document.getElementById('hdnSaldoContableERP').value) || 0;
+            const txtExtracto = document.getElementById('txtExtracto');
+            const txtTransito = document.getElementById('txtTransito');
+            const txtPendientes = document.getElementById('txtPendientes');
+            const txtComisiones = document.getElementById('txtComisiones');
+
+            const lblBanco = document.getElementById('lblSaldoBancoAjustado');
+            const lblErp = document.getElementById('lblSaldoErpAjustado');
+            const badgeDif = document.getElementById('badgeDiferencia');
+
+            function recalcular() {
+                const extracto = parseFloat(txtExtracto.value) || 0;
+                const transito = parseFloat(txtTransito.value) || 0;
+                const pendientes = parseFloat(txtPendientes.value) || 0;
+                const comisiones = parseFloat(txtComisiones.value) || 0;
+
+                const saldoBancoAjustado = Math.round((extracto + transito - pendientes) * 100) / 100;
+                const saldoErpAjustado = Math.round((saldoErpBase - comisiones) * 100) / 100;
+                const dif = Math.round((saldoBancoAjustado - saldoErpAjustado) * 100) / 100;
+
+                lblBanco.textContent = 'S/ ' + saldoBancoAjustado.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                lblErp.textContent = 'S/ ' + saldoErpAjustado.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                if (Math.abs(dif) < 0.005) {
+                    badgeDif.className = 'badge bg-success fs-6';
+                    badgeDif.textContent = 'S/ 0.00 (Cuadrado)';
+                } else {
+                    badgeDif.className = 'badge bg-danger fs-6';
+                    badgeDif.textContent = 'S/ ' + dif.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' (Descuadre)';
+                }
+            }
+
+            document.querySelectorAll('.calc-input').forEach(el => el.addEventListener('input', recalcular));
+            recalcular();
+
+            const chkTodos = document.getElementById('chkTodos');
+            if (chkTodos) {
+                chkTodos.addEventListener('change', function () {
+                    document.querySelectorAll('.chk-mov').forEach(c => c.checked = chkTodos.checked);
+                });
+            }
+        })();
+    </script>
+}

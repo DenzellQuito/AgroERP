@@ -1,7 +1,383 @@
-﻿@model List<AgroERP.ViewModels.Tesoreria.CuentaBancariaItemVM>
+﻿@model AgroERP.ViewModels.Tesoreria.TesoreriaDashboardVM
 @{
     Layout = "~/Views/Shared/_LayoutContabilidad.cshtml";
-    ViewData["Title"] = "Tesorería y Conciliación Bancaria";
+    ViewData["Title"] = "Tesorería, Flujo de Caja y Bancos";
 }
-<h2>Módulo Tesoreria</h2>
-<p class="text-muted">En construcción. Responsable: Quito</p>
+
+@if (TempData["Ok"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>@TempData["Ok"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- BLOQUE 1: FLUJO DE CAJA DEL PERÍODO Y POSICIÓN DE LIQUIDEZ -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-cash-stack text-success me-2"></i>Flujo de Caja y Posición de Liquidez (PEN)</h5>
+        <small class="text-muted">Control de saldos bancarios, recaudación de clientes (CxC) y obligaciones con proveedores (CxP)</small>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalMovimiento">
+            <i class="bi bi-plus-slash-minus me-1"></i>Registrar Ingreso / Egreso Directo
+        </button>
+        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevaCuenta">
+            <i class="bi bi-bank me-1"></i>+ Nueva Cuenta Bancaria
+        </button>
+    </div>
+</div>
+
+<!-- Tarjetas de Flujo de Caja (Slide 20: Saldo Inicial + Cobros - Pagos = Saldo Final) -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <span class="text-muted small text-uppercase fw-semibold">1. Saldo Inicial del Mes</span>
+                <h4 class="fw-bold text-secondary mt-1 mb-0">S/ @Model.SaldoInicialCaja.ToString("N2")</h4>
+                <small class="text-muted">Apertura acumulada en bancos</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-success border-4">
+            <div class="card-body">
+                <span class="text-muted small text-uppercase fw-semibold">2. (+) Cobros del Mes</span>
+                <h4 class="fw-bold text-success mt-1 mb-0">+ S/ @Model.CobrosMes.ToString("N2")</h4>
+                <small class="text-muted">Recaudación e ingresos en bancos</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-danger border-4">
+            <div class="card-body">
+                <span class="text-muted small text-uppercase fw-semibold">3. (-) Pagos del Mes</span>
+                <h4 class="fw-bold text-danger mt-1 mb-0">- S/ @Model.PagosMes.ToString("N2")</h4>
+                <small class="text-muted">Desembolsos y gastos bancarios</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100 bg-dark text-white">
+            <div class="card-body">
+                <span class="text-white-50 small text-uppercase fw-semibold">4. (=) Saldo Final Disponible</span>
+                <h4 class="fw-bold text-info mt-1 mb-0">S/ @Model.SaldoFinalDisponible.ToString("N2")</h4>
+                <small class="text-white-50">Contable: S/ @Model.SaldoFinalContable.ToString("N2")</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tarjetas de Liquidez Proyectada (Cruce con CxC y CxP) -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+        <div class="row align-items-center text-center">
+            <div class="col-md-4 border-end">
+                <span class="text-muted small d-block">Cuentas por Cobrar Pendientes (Díaz - AR)</span>
+                <span class="fs-5 fw-bold text-success">+ S/ @Model.TotalPorCobrarPendiente.ToString("N2")</span>
+            </div>
+            <div class="col-md-4 border-end">
+                <span class="text-muted small d-block">Cuentas por Pagar Pendientes (Changa - AP)</span>
+                <span class="fs-5 fw-bold text-danger">- S/ @Model.TotalPorPagarPendiente.ToString("N2")</span>
+            </div>
+            <div class="col-md-4">
+                <span class="text-muted small d-block">Posición de Liquidez Proyectada (Caja + CxC - CxP)</span>
+                <span class="fs-5 fw-bold @(Model.LiquidezProyectada >= 0 ? "text-primary" : "text-danger")">
+                    S/ @Model.LiquidezProyectada.ToString("N2")
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- BLOQUE 2: MAESTRO DE CUENTAS BANCARIAS -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-bank2 me-2 text-primary"></i>Maestro de Cuentas Bancarias</h6>
+        <span class="badge bg-secondary">@Model.Cuentas.Count cuenta(s)</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Banco</th>
+                    <th>Número de Cuenta / CCI</th>
+                    <th>Moneda</th>
+                    <th>Titular</th>
+                    <th class="text-end">Saldo Contable</th>
+                    <th class="text-end">Saldo Disponible</th>
+                    <th class="text-center">Partidas sin Conciliar</th>
+                    <th class="text-center">Estado</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Cuentas.Any())
+                {
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">
+                            No hay cuentas bancarias registradas. Haz clic en <strong>+ Nueva Cuenta Bancaria</strong> para comenzar.
+                        </td>
+                    </tr>
+                }
+                @foreach (var c in Model.Cuentas)
+                {
+                    <tr>
+                        <td class="fw-bold">@c.Banco</td>
+                        <td><span class="font-monospace">@c.NumeroCuenta</span></td>
+                        <td><span class="badge bg-light text-dark border">@c.Moneda</span></td>
+                        <td>@c.Titular</td>
+                        <td class="text-end fw-semibold">S/ @c.SaldoContable.ToString("N2")</td>
+                        <td class="text-end fw-bold text-success">S/ @c.SaldoDisponible.ToString("N2")</td>
+                        <td class="text-center">
+                            @if (c.MovimientosSinConciliar > 0)
+                            {
+                                <span class="badge bg-warning text-dark">@c.MovimientosSinConciliar pendiente(s)</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success-subtle text-success">Al día</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <span class="badge @(c.Activa ? "bg-success" : "bg-secondary")">
+                                @(c.Activa ? "Activa" : "Inactiva")
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-1">
+                                <a asp-action="Conciliar" asp-route-id="@c.Id" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-check2-square me-1"></i>Conciliar
+                                </a>
+                                <form asp-action="CambiarEstadoCuenta" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@c.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="Activar/Desactivar">
+                                        <i class="bi bi-power"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- BLOQUE 3: LIBRO BANCOS (MOVIMIENTOS) Y ÚLTIMAS CONCILIACIONES -->
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="bi bi-journal-text me-2 text-info"></i>Libro Bancos · Últimos Movimientos</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Cuenta</th>
+                            <th>Tipo</th>
+                            <th>Operación / Ref.</th>
+                            <th class="text-end">Monto</th>
+                            <th class="text-center">Conciliado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.UltimosMovimientos.Any())
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-3">Sin movimientos bancarios registrados.</td>
+                            </tr>
+                        }
+                        @foreach (var m in Model.UltimosMovimientos)
+                        {
+                            <tr>
+                                <td class="small">@m.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="small">@m.CuentaBanco</td>
+                                <td>
+                                    <span class="badge @(m.TipoMovimiento == "Ingreso" ? "bg-success" : "bg-danger")">
+                                        @m.TipoMovimiento
+                                    </span>
+                                </td>
+                                <td class="small">
+                                    <span class="fw-semibold">@m.NumeroOperacion</span>
+                                    <small class="text-muted d-block">@m.MedioPago · @m.ReferenciaDocumento</small>
+                                </td>
+                                <td class="text-end fw-bold @(m.TipoMovimiento == "Ingreso" ? "text-success" : "text-danger")">
+                                    @(m.TipoMovimiento == "Ingreso" ? "+" : "-") S/ @m.Monto.ToString("N2")
+                                </td>
+                                <td class="text-center">
+                                    @if (m.Conciliado)
+                                    {
+                                        <i class="bi bi-check-circle-fill text-success" title="Conciliado"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-clock-history text-warning" title="Pendiente de conciliar"></i>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="bi bi-shield-check me-2 text-success"></i>Conciliaciones Bancarias Cerradas</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Corte</th>
+                            <th>Cuenta</th>
+                            <th class="text-end">Extracto</th>
+                            <th class="text-end">Comisión</th>
+                            <th class="text-end">Saldo Final</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.UltimasConciliaciones.Any())
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-3">Aún no se han ejecutado conciliaciones.</td>
+                            </tr>
+                        }
+                        @foreach (var con in Model.UltimasConciliaciones)
+                        {
+                            <tr>
+                                <td class="small">@con.FechaCorte.ToString("dd/MM/yyyy")</td>
+                                <td class="small">@con.CuentaBanco</td>
+                                <td class="text-end small">S/ @con.SaldoExtractoBanco.ToString("N2")</td>
+                                <td class="text-end small text-danger">S/ @con.ComisionesBancarias.ToString("N2")</td>
+                                <td class="text-end fw-bold small">S/ @con.SaldoContableAjustado.ToString("N2")</td>
+                                <td><span class="badge bg-success">@con.Estado</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: NUEVA CUENTA BANCARIA -->
+<div class="modal fade" id="modalNuevaCuenta" tabindex="-1">
+    <div class="modal-dialog">
+        <form asp-action="CrearCuenta" method="post" class="modal-content">
+            @Html.AntiForgeryToken()
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-bank me-2"></i>Registrar Cuenta Bancaria</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Entidad Bancaria</label>
+                    <select name="Banco" class="form-select" required>
+                        <option value="BCP - Banco de Crédito">BCP - Banco de Crédito</option>
+                        <option value="BBVA Perú">BBVA Perú</option>
+                        <option value="Interbank">Interbank</option>
+                        <option value="Scotiabank">Scotiabank</option>
+                        <option value="Banco de la Nación">Banco de la Nación</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Número de Cuenta / CCI</label>
+                    <input type="text" name="NumeroCuenta" class="form-control" placeholder="Ej. 191-2458963-0-45" required />
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Moneda</label>
+                        <input type="text" name="Moneda" class="form-control" value="PEN" readonly />
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label fw-semibold">Titular de la Cuenta</label>
+                        <input type="text" name="Titular" class="form-control" value="Mi Paraíso Gramadal S.A.C." required />
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label fw-semibold">Saldo Inicial de Apertura (S/)</label>
+                    <input type="number" step="0.01" min="0" name="SaldoInicial" class="form-control" value="80000.00" required />
+                    <small class="text-muted">Genera automáticamente el movimiento de apertura conciliado.</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-success">Guardar Cuenta</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: REGISTRAR MOVIMIENTO BANCARIO DIRECTO -->
+<div class="modal fade" id="modalMovimiento" tabindex="-1">
+    <div class="modal-dialog">
+        <form asp-action="RegistrarMovimiento" method="post" class="modal-content">
+            @Html.AntiForgeryToken()
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-arrow-left-right me-2"></i>Registrar Movimiento en Libro Bancos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Cuenta Bancaria</label>
+                    <select name="CuentaBancariaId" class="form-select" required>
+                        @foreach (var c in Model.Cuentas.Where(x => x.Activa))
+                        {
+                            <option value="@c.Id">@c.Banco - @c.NumeroCuenta (Disp: S/ @c.SaldoDisponible.ToString("N2"))</option>
+                        }
+                    </select>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Tipo de Movimiento</label>
+                        <select name="TipoMovimiento" class="form-select" required>
+                            <option value="Ingreso">Ingreso (+)</option>
+                            <option value="Egreso">Egreso (-)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Medio de Pago</label>
+                        <select name="MedioPago" class="form-select" required>
+                            <option value="Transferencia">Transferencia</option>
+                            <option value="Deposito">Depósito</option>
+                            <option value="POS">POS</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Número de Operación</label>
+                        <input type="text" name="NumeroOperacion" class="form-control" placeholder="Ej. OP-994812" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Monto (S/)</label>
+                        <input type="number" step="0.01" min="0.01" name="Monto" class="form-control" required />
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label fw-semibold">Documento / Referencia</label>
+                    <input type="text" name="ReferenciaDocumento" class="form-control" placeholder="Ej. APORTE-SOCIOS / RETIRO-CAJA" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Registrar Movimiento</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -160,6 +160,8 @@ Códigos en la clase `Cuentas` (no los escribas a mano):
 | **Baja de activo fijo (Desuso/Retiro)** | **Méndez** | `BajaActivo` | `DepreciacionAcumulada (3913)` + `CostoNetoBajaActivo (6551)` | `MaquinariaEquipo (3331)` |
 
 El asiento debe cuadrar (`Debe = Haber`) o `RegistrarAsiento` lanza error y no se guarda nada.
+Firma exacta para registrar asientos:
+`await _contabilidad.RegistrarAsiento(modulo, referenciaId, glosa, usuarioId, (Cuentas.Xxx, debe, 0m), (Cuentas.Yyy, 0m, haber));`
 
 ---
 
