@@ -15,7 +15,7 @@ public class AsientoContable
     public int Id { get; set; }
     public DateTime FechaContable { get; set; }
     public string Glosa { get; set; } = null!;           // 250
-    public string ReferenciaModulo { get; set; } = null!; // "Recepcion", "Merma", "Factura"
+    public string ReferenciaModulo { get; set; } = null!; // "Recepcion", "Merma", "Factura", "Cobranza", "PagoProveedor", etc.
     public int? ReferenciaId { get; set; }
     public string UsuarioId { get; set; } = null!;       // FK AspNetUsers
     public List<AsientoDetalle> Detalles { get; set; } = new();
@@ -35,17 +35,28 @@ public class AsientoDetalle
 // Constantes para que ningún módulo escriba códigos a mano
 public static class Cuentas
 {
-    public const string Mercaderias       = "2011";
-    public const string MaterialesAux     = "2511"; // agroquímicos
+    // Fase 1: Logística
+    public const string Mercaderias = "2011";
+    public const string MaterialesAux = "2511"; // agroquímicos
     public const string Envases = "2611"; // jabas
     public const string ProductoTerminado = "2111";
-    public const string IgvPorPagar       = "4011";
-    public const string FacturasPorPagar  = "4212";
+    public const string IgvPorPagar = "4011";
+    public const string FacturasPorPagar = "4212";
     public const string FacturasPorCobrar = "1212";
-    public const string VentasProductos   = "7011";
+    public const string VentasProductos = "7011";
     public const string CostoVentas = "6921";
-    public const string MermasGasto       = "6598";
+    public const string MermasGasto = "6598";
     public const string FletesGasto = "6311";
+
+    // Fase 2: Tesorería y Activos Fijos
+    public const string Bancos = "1041"; // Efectivo y equivalentes - Cuentas corrientes
+    public const string MaquinariaEquipo = "3331"; // Inmuebles, maquinaria y equipo
+    public const string DepreciacionAcumulada = "3913"; // Depreciación acumulada IME
+    public const string PasivoActivoFijo = "4654"; // Cuentas por pagar diversas - Activo fijo
+    public const string MantenimientoGasto = "6341"; // Mantenimiento y reparaciones
+    public const string GastosBancarios = "6391"; // Gastos y comisiones bancarias
+    public const string CostoNetoBajaActivo = "6551"; // Costo neto de enajenación / baja de activos
+    public const string DepreciacionGasto = "6814"; // Depreciación de propiedad, planta y equipo
 }
 
 public static class TiposCuenta

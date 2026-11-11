@@ -22,6 +22,240 @@ namespace AgroERP.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("AgroERP.Models.ActivosFijos.ActivoFijo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Categoria")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("CostoAdquisicion")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("DepreciacionAcumulada")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("FechaAdquisicion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MarcaSerie")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ProveedorId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UsuarioResponsableId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("ValorNetoLibros")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("ValorResidual")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int>("VidaUtilMeses")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ZonaUbicacionId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProveedorId");
+
+                    b.HasIndex("ZonaUbicacionId");
+
+                    b.ToTable("ActivosFijos");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.ActivosFijos.BajaActivo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ActivoFijoId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("CostoHistorico")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("DepreciacionAcumuladaAlRetiro")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<DateTime>("FechaBaja")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MotivoBaja")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("ValorNetoEnBaja")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActivoFijoId");
+
+                    b.ToTable("BajasActivo");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.ActivosFijos.DepreciacionActivo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ActivoFijoId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Anio")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("DepreciacionAcumuladaAlCierre")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<DateTime>("FechaRegistro")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Mes")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("MontoDepreciado")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("ValorNetoResultante")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActivoFijoId");
+
+                    b.ToTable("DepreciacionesActivo");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.ActivosFijos.MantenimientoActivo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ActivoFijoId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Costo")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ProveedorId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActivoFijoId");
+
+                    b.HasIndex("ProveedorId");
+
+                    b.ToTable("MantenimientosActivo");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.ActivosFijos.TransferenciaActivo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ActivoFijoId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("FechaTransferencia")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Motivo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ResponsableAnteriorId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ResponsableNuevoId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ZonaDestinoId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ZonaOrigenId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActivoFijoId");
+
+                    b.HasIndex("ZonaDestinoId");
+
+                    b.HasIndex("ZonaOrigenId");
+
+                    b.ToTable("TransferenciasActivo");
+                });
+
             modelBuilder.Entity("AgroERP.Models.BI_Gestion.GastoLogistico", b =>
                 {
                     b.Property<int>("Id")
@@ -43,7 +277,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("GastosLogisticos", (string)null);
+                    b.ToTable("GastosLogisticos");
                 });
 
             modelBuilder.Entity("AgroERP.Models.BI_Gestion.IndicadorKPI", b =>
@@ -68,7 +302,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("IndicadoresKPI", (string)null);
+                    b.ToTable("IndicadoresKPI");
                 });
 
             modelBuilder.Entity("AgroERP.Models.BI_Gestion.PlanAccionMejora", b =>
@@ -97,7 +331,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("IndicadorId");
 
-                    b.ToTable("PlanesAccionMejora", (string)null);
+                    b.ToTable("PlanesAccionMejora");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.AjusteInventario", b =>
@@ -139,7 +373,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("ZonaUbicacionId");
 
-                    b.ToTable("AjustesInventario", (string)null);
+                    b.ToTable("AjustesInventario");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.Almacen", b =>
@@ -160,7 +394,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Almacenes", (string)null);
+                    b.ToTable("Almacenes");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.InspeccionCalidad", b =>
@@ -188,7 +422,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("LoteId");
 
-                    b.ToTable("InspeccionesCalidad", (string)null);
+                    b.ToTable("InspeccionesCalidad");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.InventarioExistencia", b =>
@@ -219,7 +453,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("ZonaUbicacionId");
 
-                    b.ToTable("InventariosExistencia", (string)null);
+                    b.ToTable("InventariosExistencia");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.Lote", b =>
@@ -248,7 +482,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("ArticuloId");
 
-                    b.ToTable("Lotes", (string)null);
+                    b.ToTable("Lotes");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.MovimientoKardex", b =>
@@ -290,7 +524,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("ZonaOrigenId");
 
-                    b.ToTable("MovimientosKardex", (string)null);
+                    b.ToTable("MovimientosKardex");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.RecepcionDetalle", b =>
@@ -330,7 +564,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("RecepcionId");
 
-                    b.ToTable("DetallesRecepcion", (string)null);
+                    b.ToTable("DetallesRecepcion");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.RecepcionMercaderia", b =>
@@ -363,7 +597,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("OrdenCompraId");
 
-                    b.ToTable("RecepcionesMercaderia", (string)null);
+                    b.ToTable("RecepcionesMercaderia");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.ReservaInventario", b =>
@@ -399,7 +633,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("ZonaUbicacionId");
 
-                    b.ToTable("ReservasInventario", (string)null);
+                    b.ToTable("ReservasInventario");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.ZonaUbicacion", b =>
@@ -421,7 +655,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("AlmacenId");
 
-                    b.ToTable("ZonasUbicacion", (string)null);
+                    b.ToTable("ZonasUbicacion");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Compras.CotizacionProveedor", b =>
@@ -454,7 +688,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("RequerimientoId");
 
-                    b.ToTable("CotizacionesProveedor", (string)null);
+                    b.ToTable("CotizacionesProveedor");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Compras.OrdenCompra", b =>
@@ -483,7 +717,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("ProveedorId");
 
-                    b.ToTable("OrdenesCompra", (string)null);
+                    b.ToTable("OrdenesCompra");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Compras.OrdenCompraDetalle", b =>
@@ -514,7 +748,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("OrdenCompraId");
 
-                    b.ToTable("DetallesOrdenCompra", (string)null);
+                    b.ToTable("DetallesOrdenCompra");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Compras.RequerimientoCompra", b =>
@@ -538,7 +772,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("RequerimientosCompra", (string)null);
+                    b.ToTable("RequerimientosCompra");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Compras.RequerimientoDetalle", b =>
@@ -570,7 +804,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("RequerimientoId");
 
-                    b.ToTable("DetallesRequerimiento", (string)null);
+                    b.ToTable("DetallesRequerimiento");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Contabilidad.AsientoContable", b =>
@@ -601,7 +835,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AsientosContables", (string)null);
+                    b.ToTable("AsientosContables");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Contabilidad.AsientoDetalle", b =>
@@ -632,7 +866,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("CuentaId");
 
-                    b.ToTable("DetallesAsiento", (string)null);
+                    b.ToTable("DetallesAsiento");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Contabilidad.PlanCuenta", b =>
@@ -663,7 +897,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PlanCuentas", (string)null);
+                    b.ToTable("PlanCuentas");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Distribucion.ComprobantePago", b =>
@@ -689,7 +923,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("PedidoVentaId");
 
-                    b.ToTable("ComprobantesPago", (string)null);
+                    b.ToTable("ComprobantesPago");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Distribucion.DevolucionCliente", b =>
@@ -725,7 +959,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("PedidoVentaId");
 
-                    b.ToTable("DevolucionesCliente", (string)null);
+                    b.ToTable("DevolucionesCliente");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Distribucion.GuiaRemisionRemitente", b =>
@@ -759,7 +993,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("PedidoVentaId");
 
-                    b.ToTable("GuiasRemisionRemitente", (string)null);
+                    b.ToTable("GuiasRemisionRemitente");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Distribucion.NotaCredito", b =>
@@ -789,7 +1023,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("DevolucionId");
 
-                    b.ToTable("NotaCredito", (string)null);
+                    b.ToTable("NotaCredito");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Distribucion.OrdenPicking", b =>
@@ -811,7 +1045,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("PedidoVentaId");
 
-                    b.ToTable("OrdenesPicking", (string)null);
+                    b.ToTable("OrdenesPicking");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Distribucion.OrdenPickingDetalle", b =>
@@ -838,7 +1072,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("OrdenPickingId");
 
-                    b.ToTable("DetallesOrdenPicking", (string)null);
+                    b.ToTable("DetallesOrdenPicking");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Distribucion.PedidoVenta", b =>
@@ -873,7 +1107,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("ClienteId");
 
-                    b.ToTable("PedidosVenta", (string)null);
+                    b.ToTable("PedidosVenta");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Distribucion.PedidoVentaDetalle", b =>
@@ -904,7 +1138,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("PedidoId");
 
-                    b.ToTable("DetallesPedidoVenta", (string)null);
+                    b.ToTable("DetallesPedidoVenta");
                 });
 
             modelBuilder.Entity("AgroERP.Models.MRP_IA.CampaniaAgricola", b =>
@@ -932,7 +1166,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("CampaniasAgricolas", (string)null);
+                    b.ToTable("CampaniasAgricolas");
                 });
 
             modelBuilder.Entity("AgroERP.Models.MRP_IA.NecesidadMrp", b =>
@@ -963,7 +1197,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("PronosticoId");
 
-                    b.ToTable("NecesidadesMrp", (string)null);
+                    b.ToTable("NecesidadesMrp");
                 });
 
             modelBuilder.Entity("AgroERP.Models.MRP_IA.PronosticoDemanda", b =>
@@ -987,7 +1221,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("CampaniaId");
 
-                    b.ToTable("PronosticosDemanda", (string)null);
+                    b.ToTable("PronosticosDemanda");
                 });
 
             modelBuilder.Entity("AgroERP.Models.MRP_IA.RecetaAgricolaBOM", b =>
@@ -1017,7 +1251,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("ArticuloInsumoId");
 
-                    b.ToTable("RecetasAgricolasBOM", (string)null);
+                    b.ToTable("RecetasAgricolasBOM");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Maestros.Articulo", b =>
@@ -1046,7 +1280,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Articulos", (string)null);
+                    b.ToTable("Articulos");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Maestros.Cliente", b =>
@@ -1071,7 +1305,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Clientes", (string)null);
+                    b.ToTable("Clientes");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Maestros.ParametroInventario", b =>
@@ -1097,7 +1331,7 @@ namespace AgroERP.Data.Migrations
 
                     b.HasIndex("ArticuloId");
 
-                    b.ToTable("ParametrosInventario", (string)null);
+                    b.ToTable("ParametrosInventario");
                 });
 
             modelBuilder.Entity("AgroERP.Models.Maestros.Proveedor", b =>
@@ -1121,7 +1355,317 @@ namespace AgroERP.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Proveedores", (string)null);
+                    b.ToTable("Proveedores");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.Tesoreria.CobranzaCliente", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CuentaBancariaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CuentaPorCobrarId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("FechaCobro")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MedioPago")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("MontoCobrado")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("NumeroOperacion")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CuentaBancariaId");
+
+                    b.HasIndex("CuentaPorCobrarId");
+
+                    b.ToTable("CobranzasCliente");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.Tesoreria.ConciliacionBancaria", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("ComisionesBancarias")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int>("CuentaBancariaId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("DepositosEnTransito")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("FechaCorte")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("PagosPendientes")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("SaldoContableAjustado")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("SaldoExtractoBanco")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CuentaBancariaId");
+
+                    b.ToTable("ConciliacionesBancarias");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.Tesoreria.CuentaBancaria", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activa")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Banco")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Moneda")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NumeroCuenta")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("SaldoContable")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("SaldoDisponible")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("Titular")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CuentasBancarias");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.Tesoreria.CuentaPorCobrar", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ComprobantePagoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("FechaEmision")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaVencimiento")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("MontoTotal")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("SaldoPendiente")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("ComprobantePagoId");
+
+                    b.ToTable("CuentasPorCobrar");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.Tesoreria.CuentaPorPagar", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("FechaEmision")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaVencimiento")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("MontoTotal")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("NumeroFacturaProveedor")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("OrdenCompraId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Prioridad")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ProveedorId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("SaldoPendiente")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("TipoObligacion")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrdenCompraId");
+
+                    b.HasIndex("ProveedorId");
+
+                    b.ToTable("CuentasPorPagar");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.Tesoreria.MovimientoBancario", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Conciliado")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("CuentaBancariaId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MedioPago")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Monto")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("NumeroOperacion")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReferenciaDocumento")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TipoMovimiento")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CuentaBancariaId");
+
+                    b.ToTable("MovimientosBancarios");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.Tesoreria.PagoProveedor", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CuentaBancariaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CuentaPorPagarId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("FechaPago")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MedioPago")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("MontoPagado")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("NumeroOperacion")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CuentaBancariaId");
+
+                    b.HasIndex("CuentaPorPagarId");
+
+                    b.ToTable("PagosProveedor");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -1324,6 +1868,91 @@ namespace AgroERP.Data.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("AgroERP.Models.ActivosFijos.ActivoFijo", b =>
+                {
+                    b.HasOne("AgroERP.Models.Maestros.Proveedor", "Proveedor")
+                        .WithMany()
+                        .HasForeignKey("ProveedorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AgroERP.Models.Calidad_WMS.ZonaUbicacion", "ZonaUbicacion")
+                        .WithMany()
+                        .HasForeignKey("ZonaUbicacionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Proveedor");
+
+                    b.Navigation("ZonaUbicacion");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.ActivosFijos.BajaActivo", b =>
+                {
+                    b.HasOne("AgroERP.Models.ActivosFijos.ActivoFijo", "ActivoFijo")
+                        .WithMany()
+                        .HasForeignKey("ActivoFijoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ActivoFijo");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.ActivosFijos.DepreciacionActivo", b =>
+                {
+                    b.HasOne("AgroERP.Models.ActivosFijos.ActivoFijo", "ActivoFijo")
+                        .WithMany("Depreciaciones")
+                        .HasForeignKey("ActivoFijoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ActivoFijo");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.ActivosFijos.MantenimientoActivo", b =>
+                {
+                    b.HasOne("AgroERP.Models.ActivosFijos.ActivoFijo", "ActivoFijo")
+                        .WithMany()
+                        .HasForeignKey("ActivoFijoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AgroERP.Models.Maestros.Proveedor", "Proveedor")
+                        .WithMany()
+                        .HasForeignKey("ProveedorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ActivoFijo");
+
+                    b.Navigation("Proveedor");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.ActivosFijos.TransferenciaActivo", b =>
+                {
+                    b.HasOne("AgroERP.Models.ActivosFijos.ActivoFijo", "ActivoFijo")
+                        .WithMany()
+                        .HasForeignKey("ActivoFijoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AgroERP.Models.Calidad_WMS.ZonaUbicacion", "ZonaDestino")
+                        .WithMany()
+                        .HasForeignKey("ZonaDestinoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AgroERP.Models.Calidad_WMS.ZonaUbicacion", "ZonaOrigen")
+                        .WithMany()
+                        .HasForeignKey("ZonaOrigenId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ActivoFijo");
+
+                    b.Navigation("ZonaDestino");
+
+                    b.Navigation("ZonaOrigen");
                 });
 
             modelBuilder.Entity("AgroERP.Models.BI_Gestion.PlanAccionMejora", b =>
@@ -1780,6 +2409,103 @@ namespace AgroERP.Data.Migrations
                     b.Navigation("Articulo");
                 });
 
+            modelBuilder.Entity("AgroERP.Models.Tesoreria.CobranzaCliente", b =>
+                {
+                    b.HasOne("AgroERP.Models.Tesoreria.CuentaBancaria", "CuentaBancaria")
+                        .WithMany()
+                        .HasForeignKey("CuentaBancariaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AgroERP.Models.Tesoreria.CuentaPorCobrar", "CuentaPorCobrar")
+                        .WithMany("Cobranzas")
+                        .HasForeignKey("CuentaPorCobrarId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CuentaBancaria");
+
+                    b.Navigation("CuentaPorCobrar");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.Tesoreria.ConciliacionBancaria", b =>
+                {
+                    b.HasOne("AgroERP.Models.Tesoreria.CuentaBancaria", "CuentaBancaria")
+                        .WithMany()
+                        .HasForeignKey("CuentaBancariaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CuentaBancaria");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.Tesoreria.CuentaPorCobrar", b =>
+                {
+                    b.HasOne("AgroERP.Models.Maestros.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AgroERP.Models.Distribucion.ComprobantePago", "ComprobantePago")
+                        .WithMany()
+                        .HasForeignKey("ComprobantePagoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("ComprobantePago");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.Tesoreria.CuentaPorPagar", b =>
+                {
+                    b.HasOne("AgroERP.Models.Compras.OrdenCompra", "OrdenCompra")
+                        .WithMany()
+                        .HasForeignKey("OrdenCompraId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AgroERP.Models.Maestros.Proveedor", "Proveedor")
+                        .WithMany()
+                        .HasForeignKey("ProveedorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("OrdenCompra");
+
+                    b.Navigation("Proveedor");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.Tesoreria.MovimientoBancario", b =>
+                {
+                    b.HasOne("AgroERP.Models.Tesoreria.CuentaBancaria", "CuentaBancaria")
+                        .WithMany("Movimientos")
+                        .HasForeignKey("CuentaBancariaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CuentaBancaria");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.Tesoreria.PagoProveedor", b =>
+                {
+                    b.HasOne("AgroERP.Models.Tesoreria.CuentaBancaria", "CuentaBancaria")
+                        .WithMany()
+                        .HasForeignKey("CuentaBancariaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AgroERP.Models.Tesoreria.CuentaPorPagar", "CuentaPorPagar")
+                        .WithMany("Pagos")
+                        .HasForeignKey("CuentaPorPagarId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CuentaBancaria");
+
+                    b.Navigation("CuentaPorPagar");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -1831,6 +2557,11 @@ namespace AgroERP.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("AgroERP.Models.ActivosFijos.ActivoFijo", b =>
+                {
+                    b.Navigation("Depreciaciones");
+                });
+
             modelBuilder.Entity("AgroERP.Models.Calidad_WMS.Almacen", b =>
                 {
                     b.Navigation("Zonas");
@@ -1866,6 +2597,21 @@ namespace AgroERP.Data.Migrations
             modelBuilder.Entity("AgroERP.Models.Distribucion.PedidoVenta", b =>
                 {
                     b.Navigation("Detalles");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.Tesoreria.CuentaBancaria", b =>
+                {
+                    b.Navigation("Movimientos");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.Tesoreria.CuentaPorCobrar", b =>
+                {
+                    b.Navigation("Cobranzas");
+                });
+
+            modelBuilder.Entity("AgroERP.Models.Tesoreria.CuentaPorPagar", b =>
+                {
+                    b.Navigation("Pagos");
                 });
 #pragma warning restore 612, 618
         }

@@ -29,6 +29,11 @@ builder.Services.AddScoped<DACalidad>();
 builder.Services.AddScoped<DADistribucion>();
 builder.Services.AddScoped<DAMaestros>();
 builder.Services.AddScoped<DABI>();
+builder.Services.AddScoped<DATesoreria>();
+builder.Services.AddScoped<DACobranzas>();
+builder.Services.AddScoped<DAPagos>();
+builder.Services.AddScoped<DAActivos>();
+builder.Services.AddScoped<DAPatrimonio>();
 builder.Services.AddHttpClient<DAPlanificacion>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["Forecast:BaseUrl"] ?? "http://localhost:8000");
