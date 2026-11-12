@@ -8,6 +8,21 @@
 <div class="container-fluid mt-4">
     <h2 class="mb-4">Bandeja de Cuentas por Pagar y Programación</h2>
 
+    @if (TempData["Ok"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@TempData["Ok"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
     <div class="card shadow-sm">
         <div class="card-body table-responsive">
             <table class="table table-hover table-bordered align-middle">
@@ -50,34 +65,28 @@
                                     }
                                     else if (item.Estado == "Programado")
                                     {
-
                                         <span class="badge bg-info text-dark">Programado</span>
                                     }
                                     else if (item.Estado == "Autorizado")
                                     {
-
                                         <span class="badge bg-primary">Autorizado</span>
                                     }
                                     else if (item.Estado == "PagadoParcial")
                                     {
-
                                         <span class="badge bg-secondary">Pagado Parcial</span>
                                     }
                                 </td>
                                 <td>
                                     @if (item.Estado == "Pendiente")
                                     {
-                                        <!-- Botón para la Tarea 4 de Bizagi -->
                                         <a href="@Url.Action("Programar", new { id = item.Id })" class="btn btn-sm btn-info">Programar</a>
                                     }
                                     else if (item.Estado == "Programado")
                                     {
-                                        <!-- Botón para la Tarea 6 de Bizagi -->
                                         <a href="@Url.Action("Autorizar", new { id = item.Id })" class="btn btn-sm btn-primary">Autorizar</a>
                                     }
                                     else if (item.Estado == "Autorizado" || item.Estado == "PagadoParcial")
                                     {
-                                        <!-- Botón para la Tarea 7 de Bizagi -->
                                         <a href="@Url.Action("Pagar", new { id = item.Id })" class="btn btn-sm btn-success">Pagar</a>
                                     }
                                 </td>

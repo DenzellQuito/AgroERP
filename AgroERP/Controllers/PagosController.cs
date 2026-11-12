@@ -4,6 +4,10 @@ using AgroERP.Models.Tesoreria;
 using AgroERP.ViewModels.Pagos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -17,10 +21,23 @@ public class PagosController : Controller
 
     public PagosController(DAPagos da) => _da = da;
 
+    private static async Task CargarBancosAsync(Controller ctrl, ApplicationDbContext db, int? seleccionadoId = null)
+    {
+        var bancos = await db.Set<CuentaBancaria>()
+            .Where(b => b.Activa)
+            .Select(b => new
+            {
+                b.Id,
+                Descripcion = $"{b.Banco} · {b.NumeroCuenta} (Disp: S/ {b.SaldoDisponible:N2})"
+            })
+            .ToListAsync();
+
+        ctrl.ViewBag.Bancos = new SelectList(bancos, "Id", "Descripcion", seleccionadoId);
+    }
+
     // GET: /Pagos/Index
     public async Task<IActionResult> Index()
     {
-        // Llamamos a tu método en la capa de datos
         var modelo = await _da.ObtenerBandejaPagosAsync();
         return View(modelo);
     }
@@ -28,26 +45,47 @@ public class PagosController : Controller
     // GET: /Pagos/Programar/5
     public async Task<IActionResult> Programar(int id)
     {
-        await _da.ProgramarPagoAsync(id);
-        return RedirectToAction(nameof(Index)); // Recarga la bandeja actualizada
+        try
+        {
+            await _da.ProgramarPagoAsync(id);
+            TempData["Ok"] = "Obligación programada para pago correctamente.";
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
+        return RedirectToAction(nameof(Index));
     }
 
     // GET: /Pagos/Autorizar/5
     public async Task<IActionResult> Autorizar(int id)
     {
-        await _da.AutorizarPagoAsync(id);
-        return RedirectToAction(nameof(Index)); // Recarga la bandeja actualizada
+        try
+        {
+            await _da.AutorizarPagoAsync(id);
+            TempData["Ok"] = "Pago autorizado correctamente. Ya puede ejecutar el desembolso.";
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
+        return RedirectToAction(nameof(Index));
     }
 
     // GET: /Pagos/Pagar/5
     public async Task<IActionResult> Pagar(int id, [FromServices] ApplicationDbContext db)
     {
-        // "Lectura libre" (Regla 1) - Buscamos la deuda y leemos los bancos de Quito
-        var cuenta = await db.Set<Models.CuentaPorPagar>().Include(c => c.Proveedor).FirstOrDefaultAsync(c => c.Id == id);
-        if (cuenta == null || (cuenta.Estado != "Autorizado" && cuenta.Estado != "PagadoParcial"))
-            return RedirectToAction(nameof(Index));
+        var cuenta = await db.Set<CuentaPorPagar>()
+            .Include(c => c.Proveedor)
+            .FirstOrDefaultAsync(c => c.Id == id);
 
-        ViewBag.Bancos = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(await db.Set<CuentaBancaria>().Where(b => b.Activa).ToListAsync(), "Id", "Banco");
+        if (cuenta == null || (cuenta.Estado != "Autorizado" && cuenta.Estado != "PagadoParcial"))
+        {
+            TempData["Error"] = "La cuenta por pagar no existe o aún no está autorizada.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        await CargarBancosAsync(this, db);
 
         var modelo = new PagoViewModel
         {
@@ -55,7 +93,7 @@ public class PagosController : Controller
             Proveedor = cuenta.Proveedor.RazonSocial,
             NumeroFactura = cuenta.NumeroFacturaProveedor,
             SaldoPendiente = cuenta.SaldoPendiente,
-            MontoAPagar = cuenta.SaldoPendiente // Por defecto sugerimos pagar todo
+            MontoAPagar = decimal.Round(cuenta.SaldoPendiente, 2)
         };
         return View(modelo);
     }
@@ -65,27 +103,51 @@ public class PagosController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Pagar(PagoViewModel modelo, [FromServices] ApplicationDbContext db)
     {
+        ModelState.Remove(nameof(modelo.Proveedor));
+        ModelState.Remove(nameof(modelo.NumeroFactura));
+
         if (!ModelState.IsValid)
         {
-            ViewBag.Bancos = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(await db.Set<CuentaBancaria>().Where(b => b.Activa).ToListAsync(), "Id", "Banco");
+            await RecargarEncabezadoFacturaAsync(db, modelo);
+            await CargarBancosAsync(this, db, modelo.CuentaBancariaId);
             return View(modelo);
         }
 
-        // Usuario conectado (Regla 9)
-        var usuarioId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var usuarioId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
 
         try
         {
-            await _da.ProcesarPagoAsync(modelo.CuentaPorPagarId, modelo.CuentaBancariaId, modelo.MedioPago, modelo.NumeroOperacion, modelo.MontoAPagar, usuarioId);
+            await _da.ProcesarPagoAsync(
+                modelo.CuentaPorPagarId,
+                modelo.CuentaBancariaId,
+                modelo.MedioPago,
+                modelo.NumeroOperacion,
+                modelo.MontoAPagar,
+                usuarioId);
+
+            TempData["Ok"] = $"Pago por S/ {modelo.MontoAPagar:N2} registrado, descontado en Tesorería y contabilizado en el Libro Diario.";
             return RedirectToAction(nameof(Index));
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             ModelState.AddModelError("", "Error: " + ex.Message);
-            ViewBag.Bancos = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(await db.Set<CuentaBancaria>().Where(b => b.Activa).ToListAsync(), "Id", "Banco");
+            await RecargarEncabezadoFacturaAsync(db, modelo);
+            await CargarBancosAsync(this, db, modelo.CuentaBancariaId);
             return View(modelo);
         }
     }
 
+    private static async Task RecargarEncabezadoFacturaAsync(ApplicationDbContext db, PagoViewModel modelo)
+    {
+        var cuenta = await db.Set<CuentaPorPagar>()
+            .Include(c => c.Proveedor)
+            .FirstOrDefaultAsync(c => c.Id == modelo.CuentaPorPagarId);
 
+        if (cuenta != null)
+        {
+            modelo.Proveedor = cuenta.Proveedor.RazonSocial;
+            modelo.NumeroFactura = cuenta.NumeroFacturaProveedor;
+            modelo.SaldoPendiente = cuenta.SaldoPendiente;
+        }
+    }
 }

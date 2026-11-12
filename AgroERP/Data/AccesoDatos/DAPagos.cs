@@ -99,8 +99,25 @@ public class DAPagos
         var cuenta = await _db.Set<CuentaPorPagar>().FindAsync(cuentaPorPagarId);
         if (cuenta == null) throw new Exception("Cuenta por pagar no encontrada.");
 
+        if (cuenta.Estado != "Autorizado" && cuenta.Estado != "PagadoParcial")
+            throw new Exception("La cuenta por pagar debe estar Autorizada antes de ejecutar el desembolso.");
+
+        if (montoPagado <= 0)
+            throw new Exception("El monto a pagar debe ser mayor a cero.");
+
         if (montoPagado > cuenta.SaldoPendiente)
             throw new Exception("El monto a pagar supera el saldo pendiente.");
+
+        // VALIDACIÓN DE DUPLICIDAD DE NÚMERO DE OPERACIÓN EN PAGOSPROVEEDOR
+        var nroLimpio = (nroOperacion ?? "").Trim();
+        if (string.IsNullOrEmpty(nroLimpio))
+            throw new Exception("Debe ingresar un número de operación válido.");
+
+        bool operacionDuplicada = await _db.Set<PagoProveedor>()
+            .AnyAsync(p => p.NumeroOperacion == nroLimpio);
+
+        if (operacionDuplicada)
+            throw new Exception($"El número de operación '{nroLimpio}' ya fue registrado en otro pago a proveedor.");
 
         // 1. Escribir en tu tabla PagosProveedor
         var pago = new PagoProveedor
@@ -109,7 +126,7 @@ public class DAPagos
             CuentaBancariaId = cuentaBancariaId,
             FechaPago = DateTime.Now,
             MedioPago = medioPago, // "Transferencia", "Deposito" o "POS"
-            NumeroOperacion = nroOperacion,
+            NumeroOperacion = nroLimpio,
             MontoPagado = montoPagado,
             UsuarioId = usuarioId
         };
@@ -120,7 +137,7 @@ public class DAPagos
         cuenta.Estado = cuenta.SaldoPendiente == 0 ? "Pagado" : "PagadoParcial";
 
         // 3. CONTRATO TESORERÍA: Descontar el dinero de la cuenta bancaria (Paso B)
-        await _tesoreria.RegistrarMovimientoBancario(cuentaBancariaId, "Egreso", montoPagado, medioPago, nroOperacion, $"PAG-FACT-{cuenta.NumeroFacturaProveedor}");
+        await _tesoreria.RegistrarMovimientoBancario(cuentaBancariaId, "Egreso", montoPagado, medioPago, nroLimpio, $"PAG-FACT-{cuenta.NumeroFacturaProveedor}");
 
         // 4. CONTRATO CONTABILIDAD: Asiento Doble Automático (Paso C y D)
         string cuentaDebe = cuenta.TipoObligacion == "ActivoFijo" ? Cuentas.PasivoActivoFijo : Cuentas.FacturasPorPagar;
