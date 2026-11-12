@@ -1,0 +1,68 @@
+﻿@model AgroERP.ViewModels.Pagos.PagoViewModel
+
+@{
+    Layout = "~/Views/Shared/_LayoutContabilidad.cshtml";
+    ViewData["Title"] = "Ejecutar Pago";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Ejecutar Pago a Proveedor</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <strong>@Model.Proveedor</strong><br />
+                        Factura Nro: @Model.NumeroFactura <br />
+                        Deuda actual: <strong>S/ @Model.SaldoPendiente.ToString("N2")</strong>
+                    </div>
+
+                    <form asp-action="Pagar" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <input type="hidden" asp-for="CuentaPorPagarId" />
+                        <input type="hidden" asp-for="SaldoPendiente" />
+
+                        <div class="mb-3">
+                            <label class="form-label">Cuenta Bancaria Origen</label>
+                            <select asp-for="CuentaBancariaId" class="form-select" asp-items="ViewBag.Bancos">
+                                <option value="">-- Seleccione un Banco --</option>
+                            </select>
+                            <span asp-validation-for="CuentaBancariaId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Medio de Pago</label>
+                            <select asp-for="MedioPago" class="form-select">
+                                <option value="Transferencia">Transferencia</option>
+                                <option value="Deposito">Depósito</option>
+                                <option value="POS">Tarjeta POS</option>
+                            </select>
+                            <span asp-validation-for="MedioPago" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Número de Operación</label>
+                            <input asp-for="NumeroOperacion" class="form-control" placeholder="Ej. OP-994123" />
+                            <span asp-validation-for="NumeroOperacion" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Monto a Pagar (S/)</label>
+                            <input asp-for="MontoAPagar" class="form-control text-end fs-5 text-success" type="number" step="0.01" />
+                            <span asp-validation-for="MontoAPagar" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a asp-action="Index" class="btn btn-secondary me-md-2">Cancelar</a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Confirmar Pago
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
