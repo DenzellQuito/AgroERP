@@ -21,4 +21,19 @@ public class PagosController : Controller
         var modelo = await _da.ObtenerBandejaPagosAsync();
         return View(modelo);
     }
+
+    // GET: /Pagos/Programar/5
+    public async Task<IActionResult> Programar(int id)
+    {
+        await _da.ProgramarPagoAsync(id);
+        return RedirectToAction(nameof(Index)); // Recarga la bandeja actualizada
+    }
+
+    // GET: /Pagos/Autorizar/5
+    public async Task<IActionResult> Autorizar(int id)
+    {
+        await _da.AutorizarPagoAsync(id);
+        return RedirectToAction(nameof(Index)); // Recarga la bandeja actualizada
+    }
+
 }

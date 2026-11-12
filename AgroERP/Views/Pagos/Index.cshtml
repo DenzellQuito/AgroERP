@@ -1,7 +1,91 @@
-﻿@model List<AgroERP.ViewModels.Pagos.CuentaPorPagarItemVM>
+﻿@model IEnumerable<AgroERP.ViewModels.Pagos.CuentaPorPagarItemVM>
+
 @{
     Layout = "~/Views/Shared/_LayoutContabilidad.cshtml";
     ViewData["Title"] = "Cuentas por Pagar y Programación de Pagos";
 }
-<h2>Módulo Pagos</h2>
-<p class="text-muted">En construcción. Responsable: Changa</p>
+
+<div class="container-fluid mt-4">
+    <h2 class="mb-4">Bandeja de Cuentas por Pagar y Programación</h2>
+
+    <div class="card shadow-sm">
+        <div class="card-body table-responsive">
+            <table class="table table-hover table-bordered align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Proveedor</th>
+                        <th>Tipo</th>
+                        <th>Nro Factura</th>
+                        <th>Vencimiento</th>
+                        <th>Prioridad</th>
+                        <th>Saldo Pendiente</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                No hay cuentas por pagar pendientes en la bandeja.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="fw-bold">@item.Proveedor</td>
+                                <td><span class="badge bg-secondary">@item.TipoObligacion</span></td>
+                                <td>@item.NumeroFactura</td>
+                                <td>@item.FechaVencimiento.ToShortDateString()</td>
+                                <td>@item.Prioridad</td>
+                                <td class="fw-bold text-danger">S/ @item.SaldoPendiente.ToString("N2")</td>
+                                <td>
+                                    @if (item.Estado == "Pendiente")
+                                    {
+                                        <span class="badge bg-warning text-dark">Pendiente</span>
+                                    }
+                                    else if (item.Estado == "Programado")
+                                    {
+
+                                        <span class="badge bg-info text-dark">Programado</span>
+                                    }
+                                    else if (item.Estado == "Autorizado")
+                                    {
+
+                                        <span class="badge bg-primary">Autorizado</span>
+                                    }
+                                    else if (item.Estado == "PagadoParcial")
+                                    {
+
+                                        <span class="badge bg-secondary">Pagado Parcial</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.Estado == "Pendiente")
+                                    {
+                                        <!-- Botón para la Tarea 4 de Bizagi -->
+                                        <a href="@Url.Action("Programar", new { id = item.Id })" class="btn btn-sm btn-info">Programar</a>
+                                    }
+                                    else if (item.Estado == "Programado")
+                                    {
+                                        <!-- Botón para la Tarea 6 de Bizagi -->
+                                        <a href="@Url.Action("Autorizar", new { id = item.Id })" class="btn btn-sm btn-primary">Autorizar</a>
+                                    }
+                                    else if (item.Estado == "Autorizado" || item.Estado == "PagadoParcial")
+                                    {
+                                        <!-- Botón para la Tarea 7 de Bizagi -->
+                                        <a href="@Url.Action("Pagar", new { id = item.Id })" class="btn btn-sm btn-success">Pagar</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

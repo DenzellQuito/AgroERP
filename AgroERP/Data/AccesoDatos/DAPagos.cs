@@ -64,4 +64,30 @@ public class DAPagos
             })
             .ToListAsync();
     }
+
+    // =========================================================================
+    // TAREA BIZAGI (A02): Seleccionar obligaciones y cambiar estado a Programado
+    // =========================================================================
+    public async Task ProgramarPagoAsync(int cuentaPorPagarId)
+    {
+        var cuenta = await _db.Set<CuentaPorPagar>().FindAsync(cuentaPorPagarId);
+        if (cuenta != null && cuenta.Estado == "Pendiente")
+        {
+            cuenta.Estado = "Programado";
+            await _db.SaveChangesAsync();
+        }
+    }
+
+    // =========================================================================
+    // TAREA BIZAGI (A03): Validar datos y autorizar pago
+    // =========================================================================
+    public async Task AutorizarPagoAsync(int cuentaPorPagarId)
+    {
+        var cuenta = await _db.Set<CuentaPorPagar>().FindAsync(cuentaPorPagarId);
+        if (cuenta != null && cuenta.Estado == "Programado")
+        {
+            cuenta.Estado = "Autorizado";
+            await _db.SaveChangesAsync();
+        }
+    }
 }
