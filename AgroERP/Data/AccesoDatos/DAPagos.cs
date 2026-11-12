@@ -1,4 +1,9 @@
-﻿namespace AgroERP.Data.AccesoDatos;
+﻿using AgroERP.Models;
+using AgroERP.Models.Tesoreria;
+using System;
+using System.Threading.Tasks;
+
+namespace AgroERP.Data.AccesoDatos;
 
 /// DUEÑO: Changa. Escribe CuentasPorPagar, PagosProveedor.
 public class DAPagos
@@ -15,6 +20,22 @@ public class DAPagos
     }
 
     /// Contrato llamado por Lavado (alta activo), Méndez (mantenimiento/mejora) y Changa (OC/fletes). No llama SaveChangesAsync.
-    public Task CrearCuentaPorPagar(int proveedorId, int? ordenCompraId, string tipoObligacion, string nroFactura, decimal montoTotal, int diasVencimiento = 30)
-        => throw new NotImplementedException("Contrato pendiente de implementar por Changa.");
+    public async Task CrearCuentaPorPagar(int proveedorId, int? ordenCompraId, string tipoObligacion, string nroFactura, decimal montoTotal, int diasVencimiento = 30)
+    {
+        var cuentaPorPagar = new CuentaPorPagar
+        {
+            ProveedorId = proveedorId,
+            OrdenCompraId = ordenCompraId, // null si es mantenimiento o activo sin OC
+            TipoObligacion = tipoObligacion,
+            NumeroFacturaProveedor = nroFactura, // <-- ¡Corregido!
+            MontoTotal = montoTotal,
+            SaldoPendiente = montoTotal, // Nace con toda la deuda pendiente
+            FechaEmision = DateTime.Now,
+            FechaVencimiento = DateTime.Now.AddDays(diasVencimiento),
+            Prioridad = "Media",
+            Estado = "Pendiente"
+        };
+
+        await _db.Set<CuentaPorPagar>().AddAsync(cuentaPorPagar);
+    }
 }
