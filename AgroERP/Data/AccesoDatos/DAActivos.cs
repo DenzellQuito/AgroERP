@@ -119,4 +119,56 @@ public class DAActivos
         await _db.SaveChangesAsync();
     }
 
+    // Método de la Fase 3 del Bizagi: Motor de Depreciación Mensual
+    public async Task DepreciarActivoAsync(int activoId, string usuarioId)
+    {
+        var activo = await _db.Set<ActivoFijo>().FindAsync(activoId);
+        if (activo == null || activo.Estado != "Activo")
+            throw new Exception("Solo se pueden depreciar bienes en estado 'Activo'.");
+
+        if (activo.ValorNetoLibros <= activo.ValorResidual)
+            throw new Exception("El activo ya alcanzó su valor residual mínimo. No se puede depreciar más.");
+
+        // 1. Cálculo de depreciación lineal mensual: (Costo - ValorResidual) / VidaUtil
+        decimal cuotaMensual = (activo.CostoAdquisicion - activo.ValorResidual) / activo.VidaUtilMeses;
+        cuotaMensual = Math.Round(cuotaMensual, 2, MidpointRounding.AwayFromZero);
+
+        // Tope: Asegurar que la última cuota no lo baje más allá del valor residual
+        if (activo.ValorNetoLibros - cuotaMensual < activo.ValorResidual)
+        {
+            cuotaMensual = activo.ValorNetoLibros - activo.ValorResidual;
+        }
+
+        // 2. Actualizar los saldos del maestro
+        activo.DepreciacionAcumulada += cuotaMensual;
+        activo.ValorNetoLibros -= cuotaMensual;
+        _db.Set<ActivoFijo>().Update(activo);
+
+        // 3. Registrar el historial (insertar en DepreciacionesActivo)
+        var historial = new DepreciacionActivo
+        {
+            ActivoFijoId = activo.Id,
+            Anio = DateTime.Now.Year,
+            Mes = DateTime.Now.Month,
+            FechaRegistro = DateTime.Now,
+            MontoDepreciado = cuotaMensual,
+            DepreciacionAcumuladaAlCierre = activo.DepreciacionAcumulada,
+            ValorNetoResultante = activo.ValorNetoLibros
+        };
+        await _db.Set<DepreciacionActivo>().AddAsync(historial);
+
+        // 4. Contabilizar: Regla del README (6814 vs 3913)
+        await _contabilidad.RegistrarAsiento(
+            "Depreciacion",
+            activo.Id,
+            $"Depreciación mensual {DateTime.Now.ToString("MM-yyyy")} - Activo {activo.Codigo}",
+            usuarioId,
+            (Cuentas.DepreciacionGasto, cuotaMensual, 0m),       // Debe: 6814 (Gasto)
+            (Cuentas.DepreciacionAcumulada, 0m, cuotaMensual)    // Haber: 3913 (Acumulada)
+        );
+
+        // Un solo guardado para sellar el mes
+        await _db.SaveChangesAsync();
+    }
+
 }

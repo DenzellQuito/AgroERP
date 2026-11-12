@@ -101,4 +101,24 @@ public class ActivosController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EjecutarDepreciacion(int id)
+    {
+        try
+        {
+            var usuarioId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "USR-001";
+
+            await _da.DepreciarActivoAsync(id, usuarioId);
+
+            TempData["MensajeExito"] = "Depreciación mensual ejecutada y contabilizada correctamente.";
+        }
+        catch (System.Exception ex)
+        {
+            TempData["MensajeError"] = $"Error en depreciación: {ex.Message}";
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
 }
