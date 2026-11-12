@@ -53,4 +53,12 @@ public class DAActivos
 
         _db.Set<ActivoFijo>().Update(activo);
     }
+
+    // Método para listar los activos en la pantalla principal
+    public async Task<List<ActivoFijo>> ObtenerActivosAsync()
+    {
+        return await _db.Set<ActivoFijo>()
+            .Include(a => a.ZonaUbicacion) // Traemos los datos de la zona cruzando tablas
+            .ToListAsync();
+    }
 }
