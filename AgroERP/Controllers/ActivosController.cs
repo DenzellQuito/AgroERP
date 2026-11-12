@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Security.Claims;
 
 namespace AgroERP.Controllers;
 
@@ -74,6 +75,30 @@ public class ActivosController : Controller
 
         // Si hay errores de validación, devolvemos la misma vista con los mensajes
         return View(modelo);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Capitalizar(int id)
+    {
+        try
+        {
+            // Regla 9: Obtener el ID del usuario conectado dinámicamente
+            var usuarioId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "USR-001";
+
+            // Simulamos el número de factura para la demostración
+            string nroFactura = $"FACT-AF-{id}-{DateTime.Now.Millisecond}";
+
+            await _da.CapitalizarActivoAsync(id, nroFactura, usuarioId);
+
+            TempData["MensajeExito"] = "¡Activo capitalizado! Se generó la CxP y el asiento contable correctamente.";
+        }
+        catch (System.Exception ex)
+        {
+            TempData["MensajeError"] = $"Error al capitalizar: {ex.Message}";
+        }
+
+        return RedirectToAction(nameof(Index));
     }
 
 }

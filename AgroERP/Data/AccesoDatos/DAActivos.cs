@@ -1,4 +1,5 @@
 ﻿using AgroERP.Models.ActivosFijos;
+using AgroERP.Models.Contabilidad;
 using Microsoft.EntityFrameworkCore;
 
 namespace AgroERP.Data.AccesoDatos;
@@ -72,6 +73,49 @@ public class DAActivos
         nuevoActivo.ValorNetoLibros = nuevoActivo.CostoAdquisicion;
 
         await _db.Set<ActivoFijo>().AddAsync(nuevoActivo);
+        await _db.SaveChangesAsync();
+    }
+
+    // Método de la Fase 2 del Bizagi: Capitalización, CxP y Contabilidad
+    public async Task CapitalizarActivoAsync(int activoId, string nroFactura, string usuarioId)
+    {
+        var activo = await _db.Set<ActivoFijo>().FindAsync(activoId);
+        if (activo == null || activo.Estado != "EnProceso")
+            throw new Exception("El activo no existe o ya fue capitalizado.");
+
+        if (!activo.ProveedorId.HasValue)
+            throw new Exception("El activo debe tener un Proveedor asignado para generar la deuda.");
+
+        // 1. Cambiar estado a Activo
+        activo.Estado = "Activo";
+        _db.Set<ActivoFijo>().Update(activo);
+
+        // 2. Cálculos Financieros (Base + IGV)
+        decimal igv = Math.Round(activo.CostoAdquisicion * 0.18m, 2, MidpointRounding.AwayFromZero);
+        decimal totalFactura = activo.CostoAdquisicion + igv;
+
+        // 3. Generar Obligación: Contrato con DAPagos (Changa)
+        await _pagos.CrearCuentaPorPagar(
+            proveedorId: activo.ProveedorId.Value,
+            ordenCompraId: null,
+            tipoObligacion: "ActivoFijo",
+            nroFactura: nroFactura,
+            montoTotal: totalFactura,
+            diasVencimiento: 30
+        );
+
+        // 4. Detonar Asiento: Contrato con DAContabilidad (Quito)
+        await _contabilidad.RegistrarAsiento(
+            "AltaActivo",
+            activo.Id,
+            $"Capitalización de Activo Fijo {activo.Codigo}",
+            usuarioId,
+            (Cuentas.MaquinariaEquipo, activo.CostoAdquisicion, 0m), // Debe: Costo sin IGV
+            (Cuentas.IgvPorPagar, igv, 0m),                          // Debe: IGV
+            (Cuentas.PasivoActivoFijo, 0m, totalFactura)             // Haber: Total a pagar
+        );
+
+        // 5. Un solo guardado para sellar la transacción de los 3 módulos
         await _db.SaveChangesAsync();
     }
 
