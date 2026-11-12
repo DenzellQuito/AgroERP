@@ -1,4 +1,5 @@
 ﻿using AgroERP.Models;
+using AgroERP.Models.Contabilidad;
 using AgroERP.Models.Tesoreria;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -89,5 +90,51 @@ public class DAPagos
             cuenta.Estado = "Autorizado";
             await _db.SaveChangesAsync();
         }
+    }
+    // =========================================================================
+    // TAREA BIZAGI (A04): Ejecutar el pago y contabilizar (JEFE FINAL)
+    // =========================================================================
+    public async Task ProcesarPagoAsync(int cuentaPorPagarId, int cuentaBancariaId, string medioPago, string nroOperacion, decimal montoPagado, string usuarioId)
+    {
+        var cuenta = await _db.Set<CuentaPorPagar>().FindAsync(cuentaPorPagarId);
+        if (cuenta == null) throw new Exception("Cuenta por pagar no encontrada.");
+
+        if (montoPagado > cuenta.SaldoPendiente)
+            throw new Exception("El monto a pagar supera el saldo pendiente.");
+
+        // 1. Escribir en tu tabla PagosProveedor
+        var pago = new PagoProveedor
+        {
+            CuentaPorPagarId = cuentaPorPagarId,
+            CuentaBancariaId = cuentaBancariaId,
+            FechaPago = DateTime.Now,
+            MedioPago = medioPago, // "Transferencia", "Deposito" o "POS"
+            NumeroOperacion = nroOperacion,
+            MontoPagado = montoPagado,
+            UsuarioId = usuarioId
+        };
+        await _db.Set<PagoProveedor>().AddAsync(pago);
+
+        // 2. Rebajar saldo de la deuda y actualizar estado
+        cuenta.SaldoPendiente -= montoPagado;
+        cuenta.Estado = cuenta.SaldoPendiente == 0 ? "Pagado" : "PagadoParcial";
+
+        // 3. CONTRATO TESORERÍA: Descontar el dinero de la cuenta bancaria (Paso B)
+        await _tesoreria.RegistrarMovimientoBancario(cuentaBancariaId, "Egreso", montoPagado, medioPago, nroOperacion, $"PAG-FACT-{cuenta.NumeroFacturaProveedor}");
+
+        // 4. CONTRATO CONTABILIDAD: Asiento Doble Automático (Paso C y D)
+        string cuentaDebe = cuenta.TipoObligacion == "ActivoFijo" ? Cuentas.PasivoActivoFijo : Cuentas.FacturasPorPagar;
+
+        await _contabilidad.RegistrarAsiento(
+            "Pagos",
+            cuentaPorPagarId,
+            $"Pago de factura {cuenta.NumeroFacturaProveedor}",
+            usuarioId,
+            (cuentaDebe, montoPagado, 0m),     // DEBE: 4212 o 4654
+            (Cuentas.Bancos, 0m, montoPagado)  // HABER: 1041
+        );
+
+        // 5. UN SOLO GUARDADO POR OPERACIÓN (Regla 4)
+        await _db.SaveChangesAsync();
     }
 }
