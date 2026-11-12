@@ -9,12 +9,14 @@ public class DADistribucion
     private readonly ApplicationDbContext _db;
     private readonly DAContabilidad _contabilidad;
     private readonly DAAlmacen _almacen;
+    private readonly DACobranzas _cobranzas;
 
-    public DADistribucion(ApplicationDbContext db, DAContabilidad contabilidad, DAAlmacen almacen)
+    public DADistribucion(ApplicationDbContext db, DAContabilidad contabilidad, DAAlmacen almacen, DACobranzas cobranzas)
     {
         _db = db;
         _contabilidad = contabilidad;
         _almacen = almacen;
+        _cobranzas = cobranzas;
     }
 
     // 1. FACTURACIÓN 
@@ -31,7 +33,6 @@ public class DADistribucion
         decimal neto = Math.Round(totalFactura / 1.18m, 2, MidpointRounding.AwayFromZero);
         decimal igv = totalFactura - neto;
 
-        // INICIO DE TRANSACCIÓN
         using var transaction = await _db.Database.BeginTransactionAsync();
         try
         {
@@ -43,7 +44,6 @@ public class DADistribucion
             };
 
             _db.ComprobantesPago.Add(comprobante);
-            // Guardamos temporalmente para generar el ID del comprobante
             await _db.SaveChangesAsync();
 
             await _contabilidad.RegistrarAsiento(
@@ -56,7 +56,9 @@ public class DADistribucion
                 (Cuentas.IgvPorPagar, 0m, igv)
             );
 
-            // Guardado final (asiento contable)
+            // Creamos la Cuenta por Cobrar en el módulo de Cobranzas
+            await _cobranzas.CrearCuentaPorCobrar(comprobante.Id, 30);
+
             await _db.SaveChangesAsync();
             await transaction.CommitAsync();
 
@@ -69,7 +71,7 @@ public class DADistribucion
         }
     }
 
-    // 2. DEVOLUCIÓN Y NOTA DE CRÉDITO 
+    // 2. DEVOLUCIÓN Y NOTA DE CRÉDITO (CON VALIDACIÓN FINANCIERA)
     public async Task<int> RegistrarDevolucion(int pedidoId, int articuloId, int loteId, decimal cantidadRechazada, string motivo, string usuarioId)
     {
         var pedido = await _db.PedidosVenta.FindAsync(pedidoId);
@@ -78,10 +80,23 @@ public class DADistribucion
         var comprobante = await _db.ComprobantesPago.FirstOrDefaultAsync(c => c.PedidoVentaId == pedidoId);
         if (comprobante == null) throw new Exception("El pedido no tiene comprobante de pago para acreditar.");
 
+        // 🔥 VALIDACIÓN DE SEGURIDAD FINANCIERA
+        var cxc = await _db.CuentasPorCobrar.FirstOrDefaultAsync(c => c.ComprobantePagoId == comprobante.Id);
+        if (cxc == null) throw new Exception("No se encontró una Cuenta por Cobrar asociada a esta factura.");
+
+        if (cxc.Estado == "Cobrado")
+            throw new Exception("No se puede registrar la devolución porque esta factura ya fue pagada en su totalidad. Debe gestionar la devolución en efectivo (Tesorería).");
+
         var detallePedido = await _db.DetallesPedidoVenta
             .FirstOrDefaultAsync(d => d.PedidoId == pedidoId && d.ArticuloId == articuloId);
 
         if (detallePedido == null) throw new Exception("El artículo no pertenece al pedido original.");
+
+        decimal totalDevolucion = Math.Round(cantidadRechazada * detallePedido.PrecioUnitario, 2, MidpointRounding.AwayFromZero);
+
+        // Validación extra: No devolver más de lo que debe
+        if (totalDevolucion > cxc.SaldoPendiente)
+            throw new Exception($"El monto a devolver (S/ {totalDevolucion:N2}) supera el saldo pendiente de la deuda (S/ {cxc.SaldoPendiente:N2}).");
 
         using var transaction = await _db.Database.BeginTransactionAsync();
 
@@ -100,7 +115,6 @@ public class DADistribucion
 
             await _almacen.ReingresarDevolucion(devolucion.Id);
 
-            decimal totalDevolucion = Math.Round(cantidadRechazada * detallePedido.PrecioUnitario, 2, MidpointRounding.AwayFromZero);
             decimal netoDevolucion = Math.Round(totalDevolucion / 1.18m, 2, MidpointRounding.AwayFromZero);
             decimal igvDevolucion = totalDevolucion - netoDevolucion;
 
@@ -130,6 +144,9 @@ public class DADistribucion
                 (Cuentas.IgvPorPagar, igvDevolucion, 0m),
                 (Cuentas.FacturasPorCobrar, 0m, totalDevolucion)
             );
+
+            // Aplicamos el descuento a la Cuenta por Cobrar
+            await _cobranzas.AplicarNotaCredito(comprobante.Id, totalDevolucion);
 
             await _db.SaveChangesAsync();
             await transaction.CommitAsync();
