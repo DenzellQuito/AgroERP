@@ -61,4 +61,18 @@ public class DAActivos
             .Include(a => a.ZonaUbicacion) // Traemos los datos de la zona cruzando tablas
             .ToListAsync();
     }
+
+    // Método para crear el activo en la BD
+    public async Task CrearActivoAsync(ActivoFijo nuevoActivo)
+    {
+        // Regla 8: El activo nace en estado "EnProceso"
+        nuevoActivo.Estado = "EnProceso";
+        nuevoActivo.FechaAdquisicion = DateTime.Now;
+        nuevoActivo.DepreciacionAcumulada = 0;
+        nuevoActivo.ValorNetoLibros = nuevoActivo.CostoAdquisicion;
+
+        await _db.Set<ActivoFijo>().AddAsync(nuevoActivo);
+        await _db.SaveChangesAsync();
+    }
+
 }
