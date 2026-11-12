@@ -1,4 +1,7 @@
-﻿namespace AgroERP.Data.AccesoDatos;
+﻿using AgroERP.Models.ActivosFijos;
+using Microsoft.EntityFrameworkCore;
+
+namespace AgroERP.Data.AccesoDatos;
 
 /// DUEÑO: Lavado. Escribe ActivosFijos, DepreciacionesActivo.
 public class DAActivos
@@ -15,14 +18,61 @@ public class DAActivos
     }
 
     /// Contrato llamado por Méndez al transferir un activo fijo. No llama SaveChangesAsync.
-    public Task ActualizarUbicacionYCustodio(int activoId, int zonaUbicacionId, string usuarioResponsableId)
-        => throw new NotImplementedException("Contrato pendiente de implementar por Lavado.");
+    public async Task ActualizarUbicacionYCustodio(int activoId, int zonaUbicacionId, string usuarioResponsableId)
+    {
+        var activo = await _db.Set<ActivoFijo>().FindAsync(activoId);
+        if (activo == null) throw new Exception("Activo no encontrado.");
+
+        activo.ZonaUbicacionId = zonaUbicacionId;
+        activo.UsuarioResponsableId = usuarioResponsableId;
+
+        _db.Set<ActivoFijo>().Update(activo);
+    }
 
     /// Contrato llamado por Méndez al registrar una mejora capitalizable. No llama SaveChangesAsync.
-    public Task CapitalizarMejora(int activoId, decimal montoMejora)
-        => throw new NotImplementedException("Contrato pendiente de implementar por Lavado.");
+    public async Task CapitalizarMejora(int activoId, decimal montoMejora)
+    {
+        var activo = await _db.Set<ActivoFijo>().FindAsync(activoId);
+        if (activo == null) throw new Exception("Activo no encontrado.");
+
+        // La mejora suma valor al costo histórico y al valor neto según NIC 16
+        activo.CostoAdquisicion += montoMejora;
+        activo.ValorNetoLibros += montoMejora;
+
+        _db.Set<ActivoFijo>().Update(activo);
+    }
 
     /// Contrato llamado por Méndez al dar de baja un activo fijo. No llama SaveChangesAsync.
-    public Task MarcarActivoDadoDeBaja(int activoId)
-        => throw new NotImplementedException("Contrato pendiente de implementar por Lavado.");
+    public async Task MarcarActivoDadoDeBaja(int activoId)
+    {
+        var activo = await _db.Set<ActivoFijo>().FindAsync(activoId);
+        if (activo == null) throw new Exception("Activo no encontrado.");
+
+        // Texto exacto de estado según regla 8 del README
+        activo.Estado = "DadoDeBaja";
+
+        _db.Set<ActivoFijo>().Update(activo);
+    }
+
+    // Método para listar los activos en la pantalla principal
+    public async Task<List<ActivoFijo>> ObtenerActivosAsync()
+    {
+        return await _db.Set<ActivoFijo>()
+            .Include(a => a.ZonaUbicacion) // Traemos los datos de la zona cruzando tablas
+            .ToListAsync();
+    }
+
+    // Método para crear el activo en la BD
+    public async Task CrearActivoAsync(ActivoFijo nuevoActivo)
+    {
+        // Regla 8: El activo nace en estado "EnProceso"
+        nuevoActivo.Estado = "EnProceso";
+        nuevoActivo.FechaAdquisicion = DateTime.Now;
+        nuevoActivo.DepreciacionAcumulada = 0;
+        nuevoActivo.ValorNetoLibros = nuevoActivo.CostoAdquisicion;
+
+        await _db.Set<ActivoFijo>().AddAsync(nuevoActivo);
+        await _db.SaveChangesAsync();
+    }
+
 }

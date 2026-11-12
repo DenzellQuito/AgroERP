@@ -1,0 +1,90 @@
+﻿@model AgroERP.ViewModels.Activos.CrearActivoVM
+
+@{
+    Layout = "~/Views/Shared/_LayoutContabilidad.cshtml";
+    ViewData["Title"] = "Registrar Nuevo Activo";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">Registrar Ficha de Activo Fijo</h2>
+
+    <div class="card shadow-sm" style="max-width: 800px;">
+        <div class="card-body">
+            <form asp-action="Create" method="post">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Código Interno</label>
+                        <input asp-for="Codigo" class="form-control" placeholder="Ej: AF-001" required />
+                        <span asp-validation-for="Codigo" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Nombre del Bien</label>
+                        <input asp-for="Nombre" class="form-control" placeholder="Tractor Agrícola, Bomba de Agua..." required />
+                        <span asp-validation-for="Nombre" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Categoría</label>
+                        <select asp-for="Categoria" class="form-select" required>
+                            <option value="">-- Seleccionar --</option>
+                            <option value="MaquinariaAgricola">Maquinaria Agrícola</option>
+                            <option value="EquiposComputo">Equipos de Cómputo</option>
+                            <option value="InfraestructuraRiego">Infraestructura de Riego</option>
+                            <option value="Vehiculos">Vehículos</option>
+                        </select>
+                        <span asp-validation-for="Categoria" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Marca / Serie</label>
+                        <input asp-for="MarcaSerie" class="form-control" required />
+                        <span asp-validation-for="MarcaSerie" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Simulamos IDs por ahora -->
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">ID Proveedor (Opcional)</label>
+                        <input asp-for="ProveedorId" class="form-control" type="number" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">ID Zona Ubicación</label>
+                        <input asp-for="ZonaUbicacionId" class="form-control" type="number" value="1" required />
+                        <span asp-validation-for="ZonaUbicacionId" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">ID Usuario Custodio</label>
+                        <input asp-for="UsuarioResponsableId" class="form-control" value="USR-004" required />
+                        <span asp-validation-for="UsuarioResponsableId" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <h5 class="mt-4 border-bottom pb-2">Datos Financieros</h5>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Costo Adquisición (S/)</label>
+                        <input asp-for="CostoAdquisicion" class="form-control" type="number" step="0.01" min="0.01" required />
+                        <span asp-validation-for="CostoAdquisicion" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Valor Residual (S/)</label>
+                        <input asp-for="ValorResidual" class="form-control" type="number" step="0.01" min="0" required />
+                        <span asp-validation-for="ValorResidual" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Vida Útil (Meses)</label>
+                        <input asp-for="VidaUtilMeses" class="form-control" type="number" min="1" required />
+                        <span asp-validation-for="VidaUtilMeses" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="@Url.Action("Index")" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-success">Guardar Ficha</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
