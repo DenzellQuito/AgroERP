@@ -4,6 +4,7 @@ using AgroERP.Models.Tesoreria;
 using AgroERP.ViewModels.Pagos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -43,7 +44,7 @@ public class PagosController : Controller
     public async Task<IActionResult> Pagar(int id, [FromServices] ApplicationDbContext db)
     {
         // "Lectura libre" (Regla 1) - Buscamos la deuda y leemos los bancos de Quito
-        var cuenta = await db.Set<Models.CuentaPorPagar>().Include(c => c.Proveedor).FirstOrDefaultAsync(c => c.Id == id);
+        var cuenta = await db.Set<CuentaPorPagar>().Include(c => c.Proveedor).FirstOrDefaultAsync(c => c.Id == id);
         if (cuenta == null || (cuenta.Estado != "Autorizado" && cuenta.Estado != "PagadoParcial"))
             return RedirectToAction(nameof(Index));
 
