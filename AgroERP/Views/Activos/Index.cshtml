@@ -1,7 +1,98 @@
 ﻿@model List<AgroERP.ViewModels.Activos.ActivoFijoItemVM>
+
 @{
     Layout = "~/Views/Shared/_LayoutContabilidad.cshtml";
     ViewData["Title"] = "Activos Fijos y Depreciación";
 }
-<h2>Módulo Activos</h2>
-<p class="text-muted">En construcción. Responsable: Lavado</p>
+
+<div class="container mt-4">
+
+    <!-- Alertas movidas aquí arriba para no romper el diseño flexbox -->
+    @if (TempData["MensajeExito"] != null)
+    {
+        <div class="alert alert-success mb-3">@TempData["MensajeExito"]</div>
+    }
+    @if (TempData["MensajeError"] != null)
+    {
+        <div class="alert alert-danger mb-3">@TempData["MensajeError"]</div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Maestro de Activos Fijos</h2>
+        <a href="@Url.Action("Create")" class="btn btn-primary">Registrar Nuevo Activo</a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Categoría</th>
+                        <th>Costo Adquisición</th>
+                        <th>Valor Neto</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="7" class="text-center py-4">No hay activos fijos registrados.</td></tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="fw-bold">@item.Codigo</td>
+                                <td>@item.Nombre</td>
+                                <td>@item.Categoria</td>
+                                <td>S/ @item.CostoAdquisicion.ToString("0.00")</td>
+                                <td>S/ @item.ValorNetoLibros.ToString("0.00")</td>
+                                <td>
+                                    @if (item.Estado == "Activo")
+                                    {
+                                        <span class="badge bg-success">Activo</span>
+                                    }
+                                    else if (item.Estado == "EnProceso")
+                                    {
+                                        <span class="badge bg-warning text-dark">En Proceso</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Dado de Baja</span>
+                                    }
+                                </td>
+
+                                <td>
+
+                                    @if (item.Estado == "EnProceso")
+                                    {
+                                        <form asp-action="Capitalizar" method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('¿Capitalizar este activo? Se enviará la deuda a Tesorería y se generará el asiento contable.');">
+                                                Capitalizar
+                                            </button>
+                                        </form>
+                                    }
+
+                                    @if (item.Estado == "Activo")
+                                    {
+                                        <form asp-action="EjecutarDepreciacion" method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('¿Ejecutar la depreciación de este mes? Se restará valor al activo y se generará el asiento contable.');">
+                                                Depreciar Mes
+                                            </button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
