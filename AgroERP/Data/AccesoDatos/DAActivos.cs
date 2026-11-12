@@ -66,6 +66,14 @@ public class DAActivos
     // Método para crear el activo en la BD
     public async Task CrearActivoAsync(ActivoFijo nuevoActivo)
     {
+        nuevoActivo.Codigo = nuevoActivo.Codigo.Trim().ToUpper();
+
+        if (await _db.Set<ActivoFijo>().AnyAsync(a => a.Codigo == nuevoActivo.Codigo))
+            throw new Exception($"Ya existe un activo fijo registrado con el código '{nuevoActivo.Codigo}'.");
+
+        if (nuevoActivo.ValorResidual >= nuevoActivo.CostoAdquisicion)
+            throw new Exception("El valor residual debe ser menor al costo de adquisición.");
+
         // Regla 8: El activo nace en estado "EnProceso"
         nuevoActivo.Estado = "EnProceso";
         nuevoActivo.FechaAdquisicion = DateTime.Now;

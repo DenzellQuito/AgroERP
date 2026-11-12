@@ -1,11 +1,16 @@
-﻿using AgroERP.Data.AccesoDatos;
+﻿using AgroERP.Data;
+using AgroERP.Data.AccesoDatos;
+using AgroERP.Models.Calidad_WMS;
+using AgroERP.Models.Maestros;
 using AgroERP.ViewModels.Activos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Linq;
-using System.Threading.Tasks;
-using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace AgroERP.Controllers;
 
@@ -17,12 +22,26 @@ public class ActivosController : Controller
 
     public ActivosController(DAActivos da) => _da = da;
 
+    private static async Task CargarCombosAsync(Controller ctrl, ApplicationDbContext db, CrearActivoVM? vm = null)
+    {
+        var proveedores = await db.Set<Proveedor>()
+            .OrderBy(p => p.RazonSocial)
+            .Select(p => new { p.Id, p.RazonSocial })
+            .ToListAsync();
+
+        var zonas = await db.Set<ZonaUbicacion>()
+            .Include(z => z.Almacen)
+            .Select(z => new { z.Id, Nombre = z.Almacen.Nombre + " - " + z.CodigoUbicacion })
+            .ToListAsync();
+
+        ctrl.ViewBag.Proveedores = new SelectList(proveedores, "Id", "RazonSocial", vm?.ProveedorId);
+        ctrl.ViewBag.Zonas = new SelectList(zonas, "Id", "Nombre", vm?.ZonaUbicacionId);
+    }
+
     public async Task<IActionResult> Index()
     {
-        // 1. Llamamos a tu método del Paso 2
         var activos = await _da.ObtenerActivosAsync();
 
-        // 2. Llenamos el ViewModel exacto que creó Denzell
         var viewModel = activos.Select(a => new ActivoFijoItemVM
         {
             Id = a.Id,
@@ -34,24 +53,31 @@ public class ActivosController : Controller
             Estado = a.Estado
         }).ToList();
 
-        // 3. Lo enviamos a la vista
         return View(viewModel);
     }
 
-    // GET: Mostrar formulario vacío
-    public IActionResult Create()
+    // GET: Mostrar formulario con desplegables reales
+    public async Task<IActionResult> Create([FromServices] ApplicationDbContext db)
     {
-        // NOTA: En un proyecto real aquí cargaríamos ViewBag con Proveedores, Zonas y Usuarios.
-        // Por ahora le pasamos el modelo vacío para que la vista no se caiga.
-        return View(new CrearActivoVM());
+        await CargarCombosAsync(this, db);
+        return View(new CrearActivoVM { UsuarioResponsableId = "USR-004" });
     }
 
     // POST: Recibir los datos y guardarlos
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(CrearActivoVM modelo)
+    public async Task<IActionResult> Create(CrearActivoVM modelo, [FromServices] ApplicationDbContext db)
     {
-        if (ModelState.IsValid)
+        if (!modelo.ProveedorId.HasValue)
+            ModelState.AddModelError(nameof(modelo.ProveedorId), "Seleccione el proveedor del activo para poder capitalizarlo.");
+
+        if (!ModelState.IsValid)
+        {
+            await CargarCombosAsync(this, db, modelo);
+            return View(modelo);
+        }
+
+        try
         {
             var nuevoActivo = new AgroERP.Models.ActivosFijos.ActivoFijo
             {
@@ -68,13 +94,15 @@ public class ActivosController : Controller
             };
 
             await _da.CrearActivoAsync(nuevoActivo);
-
-            // Volvemos a la tabla para ver el activo creado
+            TempData["MensajeExito"] = $"Ficha del activo {nuevoActivo.Codigo} registrada en estado 'En Proceso'.";
             return RedirectToAction(nameof(Index));
         }
-
-        // Si hay errores de validación, devolvemos la misma vista con los mensajes
-        return View(modelo);
+        catch (Exception ex)
+        {
+            ModelState.AddModelError("", ex.Message);
+            await CargarCombosAsync(this, db, modelo);
+            return View(modelo);
+        }
     }
 
     [HttpPost]
@@ -83,17 +111,14 @@ public class ActivosController : Controller
     {
         try
         {
-            // Regla 9: Obtener el ID del usuario conectado dinámicamente
             var usuarioId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "USR-001";
-
-            // Simulamos el número de factura para la demostración
-            string nroFactura = $"FACT-AF-{id}-{DateTime.Now.Millisecond}";
+            string nroFactura = $"FACT-AF-{id}-{DateTime.Now:MMddHHmm}";
 
             await _da.CapitalizarActivoAsync(id, nroFactura, usuarioId);
 
-            TempData["MensajeExito"] = "¡Activo capitalizado! Se generó la CxP y el asiento contable correctamente.";
+            TempData["MensajeExito"] = "¡Activo capitalizado! Se envió la factura a Cuentas por Pagar (Pagos) y se generó el asiento contable.";
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             TempData["MensajeError"] = $"Error al capitalizar: {ex.Message}";
         }
@@ -113,12 +138,11 @@ public class ActivosController : Controller
 
             TempData["MensajeExito"] = "Depreciación mensual ejecutada y contabilizada correctamente.";
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             TempData["MensajeError"] = $"Error en depreciación: {ex.Message}";
         }
 
         return RedirectToAction(nameof(Index));
     }
-
 }
