@@ -33,10 +33,12 @@ public class DAPatrimonio
     {
         var inicioMes = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
 
-        // Nombres de usuario (custodios) para mostrar en lugar del Id
+        
+        // Nombres de usuario (custodios) solo del equipo (USR-001 a USR-005)
         var usuarios = await _db.Users
-            .OrderBy(u => u.UserName)
-            .Select(u => new OpcionTextoVM { Id = u.Id, Texto = u.UserName ?? u.Id })
+            .Where(u => u.Id.StartsWith("USR-"))
+            .OrderBy(u => u.Id)
+            .Select(u => new OpcionTextoVM { Id = u.Id, Texto = $"{u.UserName} ({u.Id})" })
             .ToListAsync();
         var nombreUsuario = usuarios.ToDictionary(u => u.Id, u => u.Texto);
         string Nombre(string? id) => id != null && nombreUsuario.TryGetValue(id, out var n) ? n : (id ?? "-");
