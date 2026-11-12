@@ -1,5 +1,6 @@
 ﻿using AgroERP.Models;
 using AgroERP.Models.Tesoreria;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Threading.Tasks;
 
@@ -37,5 +38,30 @@ public class DAPagos
         };
 
         await _db.Set<CuentaPorPagar>().AddAsync(cuentaPorPagar);
+    }
+
+    // =========================================================================
+    // BANDEJA PRINCIPAL: Lista las deudas para programar y pagar
+    // =========================================================================
+    public async Task<List<ViewModels.Pagos.CuentaPorPagarItemVM>> ObtenerBandejaPagosAsync()
+    {
+        return await _db.Set<CuentaPorPagar>()
+            .Include(c => c.Proveedor) // Traemos los datos del proveedor
+            .Where(c => c.Estado != "Pagado") // No mostramos los que ya se pagaron por completo
+            .OrderBy(c => c.FechaVencimiento) // Ordenamos para saber qué se vence primero
+            .Select(c => new ViewModels.Pagos.CuentaPorPagarItemVM
+            {
+                Id = c.Id,
+                Proveedor = c.Proveedor.RazonSocial,
+                TipoObligacion = c.TipoObligacion,
+                NumeroFactura = c.NumeroFacturaProveedor, // El campo que corregimos antes
+                FechaEmision = c.FechaEmision,
+                FechaVencimiento = c.FechaVencimiento,
+                Prioridad = c.Prioridad,
+                MontoTotal = c.MontoTotal,
+                SaldoPendiente = c.SaldoPendiente,
+                Estado = c.Estado
+            })
+            .ToListAsync();
     }
 }
