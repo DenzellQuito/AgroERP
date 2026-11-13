@@ -87,7 +87,7 @@ public class DACobranzas
             // 4. Asiento Contable (Bancos 1041 vs Facturas por Cobrar 1212)
             await _contabilidad.RegistrarAsiento(
                 modulo: "Cobranza",
-                referenciaId: cobranza.Id,
+                referenciaId: cxc.Id,
                 glosa: $"Cobro de CxC {cxc.Id} vía {medioPago}",
                 usuarioId: usuarioId,
                 (Cuentas.Bancos, monto, 0m),

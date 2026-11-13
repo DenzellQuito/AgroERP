@@ -47,8 +47,16 @@ public class CobranzaController : Controller
         var cxc = await _db.CuentasPorCobrar.Include(c => c.Cliente).FirstOrDefaultAsync(c => c.Id == id);
         if (cxc == null) return NotFound();
 
-        ViewBag.CuentaBancariaId = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(
-            await _db.CuentasBancarias.Where(c => c.Activa).ToListAsync(), "Id", "Banco");
+        var bancos = await _db.CuentasBancarias
+            .Where(c => c.Activa)
+            .Select(c => new
+            {
+                c.Id,
+                Descripcion = $"{c.Banco} · {c.NumeroCuenta} (Disp: S/ {c.SaldoDisponible:N2})"
+            })
+            .ToListAsync();
+
+        ViewBag.CuentaBancariaId = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(bancos, "Id", "Descripcion");
 
         ViewBag.CxC = cxc;
         return View();

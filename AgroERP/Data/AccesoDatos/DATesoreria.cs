@@ -213,6 +213,15 @@ public class DATesoreria
     {
         var c = await _db.CuentasBancarias.FindAsync(id);
         if (c == null) return "Cuenta bancaria no encontrada.";
+
+        if (c.Activa)
+        {
+            bool tienePendientes = await _db.MovimientosBancarios
+                .AnyAsync(m => m.CuentaBancariaId == id && !m.Conciliado);
+            if (tienePendientes)
+                return $"No se puede desactivar la cuenta {c.Banco} ({c.NumeroCuenta}) porque aún tiene movimientos sin conciliar.";
+        }
+
         c.Activa = !c.Activa;
         await _db.SaveChangesAsync();
         return null;
@@ -314,6 +323,7 @@ public class DATesoreria
     {
         var cuenta = await _db.CuentasBancarias.FindAsync(vm.CuentaBancariaId);
         if (cuenta == null) return "Cuenta bancaria no encontrada.";
+        if (!cuenta.Activa) return "No se puede ejecutar una conciliación sobre una cuenta bancaria inactiva.";
 
         var extracto = Math.Round(vm.SaldoExtractoBanco, 2, MidpointRounding.AwayFromZero);
         var transito = Math.Round(vm.DepositosEnTransito, 2, MidpointRounding.AwayFromZero);
