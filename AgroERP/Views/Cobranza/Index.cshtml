@@ -3,5 +3,72 @@
     Layout = "~/Views/Shared/_LayoutContabilidad.cshtml";
     ViewData["Title"] = "Cuentas por Cobrar y Cobranzas";
 }
-<h2>Módulo Cobranzas</h2>
-<p class="text-muted">En construcción. Responsable: Díaz</p>
+
+<div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+    <h2>Bandeja de Cuentas por Cobrar</h2>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning">@TempData["Warning"]</div>
+}
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Cliente</th>
+                    <th>Vencimiento</th>
+                    <th>Total</th>
+                    <th>Saldo Pend.</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var item in Model)
+                    {
+                        bool estaVencida = DateTime.Now > item.FechaVencimiento && item.SaldoPendiente > 0;
+
+                        <tr>
+                            <td>@item.Cliente</td>
+                            <td>
+                                @item.FechaVencimiento.ToShortDateString()
+                                @if (estaVencida)
+                                {
+                                    <span class="badge bg-danger ms-2">Vencida</span>
+                                }
+                            </td>
+                            <td>@item.MontoTotal.ToString("C")</td>
+                            <td class="fw-bold text-danger">@item.SaldoPendiente.ToString("C")</td>
+                            <td>
+                                <span class="badge @(item.Estado == "Pendiente" ? "bg-warning text-dark" : (item.Estado == "Cobrado" ? "bg-success" : "bg-info"))">
+                                    @item.Estado
+                                </span>
+                            </td>
+                            <td>
+                                @if (item.SaldoPendiente > 0)
+                                {
+                                    <a asp-action="RegistrarCobro" asp-route-id="@item.Id" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-cash-coin"></i> Registrar Cobro
+                                    </a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="6" class="text-center text-muted py-4">No hay cuentas por cobrar registradas.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

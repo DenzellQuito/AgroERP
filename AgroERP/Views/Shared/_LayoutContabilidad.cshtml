@@ -1,5 +1,6 @@
 ﻿@{
     var ctrlActual = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var actActual = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -119,11 +120,21 @@
                 <a href="/Patrimonio/Index"><i class="bi bi-tools"></i> Control Patrimonial</a>
             </li>
 
-            <li class="px-3 mt-3 mb-1 text-uppercase text-white-50" style="font-size: 0.75rem;">Analítica</li>
+            <li class="px-3 mt-3 mb-1 text-uppercase text-white-50" style="font-size: 0.75rem;">Contabilidad y Analítica</li>
 
-            <!-- 6. Control de Gestión (BI) -->
+            <!-- 6. Libro Diario -->
+            <li class="@(actActual == "LibroDiario" ? "active" : "")">
+                <a asp-controller="Compras" asp-action="LibroDiario"><i class="bi bi-journal-bookmark"></i> Libro Diario</a>
+            </li>
+
+            <!-- 7. Control de Gestión (BI) -->
             <li class="@(ctrlActual == "BI" ? "active" : "")">
-                <a href="/BI/Dashboard"><i class="bi bi-graph-up-arrow"></i> Control de Gestión (BI)</a>
+                <a href="/BI/Dashboard?modulo=finanzas"><i class="bi bi-graph-up-arrow"></i> Control de Gestión (BI)</a>
+				
+            </li>
+
+            <li class="@(ctrlActual == "Indicadores" ? "active" : "")">
+                <a href="/Indicadores/Index"> Indicadores (KPI)</a>
             </li>
         </ul>
     </nav>

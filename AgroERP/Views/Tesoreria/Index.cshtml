@@ -153,9 +153,18 @@
                         </td>
                         <td class="text-end">
                             <div class="d-inline-flex gap-1">
-                                <a asp-action="Conciliar" asp-route-id="@c.Id" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-check2-square me-1"></i>Conciliar
-                                </a>
+                                @if (c.Activa)
+                                {
+                                    <a asp-action="Conciliar" asp-route-id="@c.Id" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-check2-square me-1"></i>Conciliar
+                                    </a>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-sm btn-secondary" disabled title="Active la cuenta para poder conciliar">
+                                        <i class="bi bi-lock-fill me-1"></i>Conciliar
+                                    </button>
+                                }
                                 <form asp-action="CambiarEstadoCuenta" method="post" class="d-inline">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="id" value="@c.Id" />

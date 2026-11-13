@@ -1,0 +1,83 @@
+﻿@{
+    ViewData["Title"] = "Registrar Cobro";
+    Layout = "~/Views/Shared/_LayoutContabilidad.cshtml";
+    var cxc = ViewBag.CxC as AgroERP.Models.Tesoreria.CuentaPorCobrar;
+}
+
+@if (cxc == null)
+{
+    <div class="alert alert-danger mt-4">
+        <h4>Error</h4>
+        <p>No se pudo cargar la información de la cuenta por cobrar. Por favor, regrese a la bandeja e intente de nuevo.</p>
+        <a asp-action="Index" class="btn btn-secondary">Volver a la Bandeja</a>
+    </div>
+    return;
+}
+
+<div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+    <h2>Registrar Cobro</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a la Bandeja
+    </a>
+</div>
+
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning">@TempData["Warning"]</div>
+}
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+
+                <div class="alert alert-info">
+                    <h5 class="alert-heading">Resumen de la Deuda</h5>
+                    <hr>
+                    <p class="mb-1"><strong>Cliente:</strong> @cxc.Cliente.RazonSocial</p>
+                    <p class="mb-1"><strong>Total Facturado:</strong> @cxc.MontoTotal.ToString("C")</p>
+                    <p class="mb-0 fw-bold text-danger"><strong>Saldo Pendiente:</strong> @cxc.SaldoPendiente.ToString("C")</p>
+                </div>
+
+                <form asp-action="RegistrarCobro" method="post">
+                    <!-- ID oculto de la Cuenta por Cobrar -->
+                    <input type="hidden" name="cuentaPorCobrarId" value="@cxc.Id" />
+
+                    <div class="form-group mb-3">
+                        <label class="fw-bold">Monto a Cobrar (S/)</label>
+                        <input name="monto" class="form-control" type="number" step="0.01" max="@cxc.SaldoPendiente" value="@cxc.SaldoPendiente.ToString("F2")" required />
+                        <small class="text-muted">El monto no puede superar el saldo pendiente.</small>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="fw-bold">Cuenta Bancaria (Destino)</label>
+                        <select name="cuentaBancariaId" class="form-select" asp-items="ViewBag.CuentaBancariaId" required>
+                            <option value="">-- Seleccione la cuenta del banco --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="fw-bold">Medio de Pago</label>
+                        <select name="medioPago" class="form-select" required>
+                            <option value="Transferencia">Transferencia</option>
+                            <option value="Deposito">Depósito</option>
+                            <option value="POS">POS</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label class="fw-bold">N° de Operación / Voucher</label>
+                        <input name="nroOperacion" class="form-control" placeholder="Ej: 458921" required />
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle"></i> Confirmar Cobro
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>

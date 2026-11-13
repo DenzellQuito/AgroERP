@@ -1,8 +1,11 @@
 @using System.Text.Json
 @model AgroERP.ViewModels.BI.DashboardVM
 @{
-    Layout = "~/Views/Shared/_LayoutLogistica.cshtml";
-    ViewData["Title"] = "Dashboard de gestión";
+    var modulo = Context.Request.Query["modulo"].ToString();
+    bool enContabilidad = modulo == "finanzas";
+
+    Layout = enContabilidad ? "~/Views/Shared/_LayoutContabilidad.cshtml" : "~/Views/Shared/_LayoutLogistica.cshtml";
+    ViewData["Title"] = enContabilidad ? "Control de Gestión Financiera y Patrimonial" : "Dashboard de gestión";
     var metaOtif = Model.Kpis.FirstOrDefault(k => k.Nombre == "OTIF")?.Meta;
     var metaCosto = Model.Kpis.FirstOrDefault(k => k.Nombre == "Costo Logístico")?.Meta;
 }
@@ -17,8 +20,12 @@
     string Texto(string s) => s == "SinDatos" ? "Sin datos" : s;
 }
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0">Dashboard de gestión logística</h2>
+    <h2 class="mb-0">@(enContabilidad ? "Dashboard de Gestión Financiera y Activos" : "Dashboard de gestión logística")</h2>
     <form method="get" class="d-flex align-items-center gap-2">
+        @if (enContabilidad)
+        {
+            <input type="hidden" name="modulo" value="finanzas" />
+        }
         <label class="mb-0">Período:</label>
         <select name="dias" class="form-select form-select-sm" onchange="this.form.submit()">
             @foreach (var d in new[] { 30, 90, 180, 365 })

@@ -7,13 +7,25 @@ namespace AgroERP.Data.AccesoDatos;
 /// Nombres EXACTOS de los indicadores con fórmula automática.
 public static class KpiNombres
 {
+    // Fase 1: Logística
     public const string Otif = "OTIF";
     public const string CumplProveedores = "Cumplimiento de Proveedores";
     public const string Rotacion = "Rotación de Inventario";
     public const string Exactitud = "Exactitud de Inventario";
     public const string CostoLogistico = "Costo Logístico";
     public const string Merma = "Merma";
-    public static readonly string[] Todos = { Otif, CumplProveedores, Rotacion, Exactitud, CostoLogistico, Merma };
+
+    // Fase 2: Tesorería y Activos Fijos
+    public const string EfectividadCobranza = "Efectividad de Cobranza";
+    public const string CumplimientoPagos = "Cumplimiento de Pagos";
+    public const string TasaConciliacion = "Conciliación Bancaria";
+    public const string SaludPatrimonial = "Salud Patrimonial (VNL)";
+
+    public static readonly string[] Todos =
+    {
+        Otif, CumplProveedores, Rotacion, Exactitud, CostoLogistico, Merma,
+        EfectividadCobranza, CumplimientoPagos, TasaConciliacion, SaludPatrimonial
+    };
 }
 
 /// DUEÑO: Quito. Solo LEE las tablas de otros módulos; escribe IndicadoresKPI.
@@ -30,6 +42,10 @@ public class DABI
         [KpiNombres.Exactitud] = ("%", true),
         [KpiNombres.CostoLogistico] = ("%", false),
         [KpiNombres.Merma] = ("%", false),
+        [KpiNombres.EfectividadCobranza] = ("%", true),
+        [KpiNombres.CumplimientoPagos] = ("%", true),
+        [KpiNombres.TasaConciliacion] = ("%", true),
+        [KpiNombres.SaludPatrimonial] = ("%", true),
     };
 
     // ===================== CRUD DE INDICADORES =====================
@@ -37,8 +53,10 @@ public class DABI
         => _db.IndicadoresKPI.OrderBy(i => i.Id)
               .Select(i => new IndicadorVM
               {
-                  Id = i.Id, NombreMetrica = i.NombreMetrica,
-                  MetaObjetivo = i.MetaObjetivo, ToleranciaAlarma = i.ToleranciaAlarma
+                  Id = i.Id,
+                  NombreMetrica = i.NombreMetrica,
+                  MetaObjetivo = i.MetaObjetivo,
+                  ToleranciaAlarma = i.ToleranciaAlarma
               }).ToListAsync();
 
     public async Task<IndicadorVM?> ObtenerIndicadorAsync(int id)
@@ -93,13 +111,20 @@ public class DABI
                 KpiNombres.Exactitud => await Exactitud(desde),
                 KpiNombres.CostoLogistico => await CostoLogistico(desde),
                 KpiNombres.Merma => await Merma(desde),
+                KpiNombres.EfectividadCobranza => await EfectividadCobranza(desde),
+                KpiNombres.CumplimientoPagos => await CumplimientoPagos(desde),
+                KpiNombres.TasaConciliacion => await TasaConciliacion(desde),
+                KpiNombres.SaludPatrimonial => await SaludPatrimonial(),
                 _ => null
             };
             lista.Add(new KpiResultadoVM
             {
-                Nombre = ind.NombreMetrica, Valor = valor.HasValue ? Math.Round(valor.Value, 1) : null,
-                Meta = ind.MetaObjetivo, Tolerancia = ind.ToleranciaAlarma,
-                Unidad = tiene ? d.unidad : "", MayorEsMejor = !tiene || d.mayorMejor,
+                Nombre = ind.NombreMetrica,
+                Valor = valor.HasValue ? Math.Round(valor.Value, 1) : null,
+                Meta = ind.MetaObjetivo,
+                Tolerancia = ind.ToleranciaAlarma,
+                Unidad = tiene ? d.unidad : "",
+                MayorEsMejor = !tiene || d.mayorMejor,
                 Semaforo = Semaforo(valor, ind.MetaObjetivo, ind.ToleranciaAlarma, !tiene || d.mayorMejor)
             });
         }
@@ -113,7 +138,7 @@ public class DABI
         return v <= meta ? "Verde" : v <= meta + tol ? "Amarillo" : "Rojo";
     }
 
-    /// OTIF = pedidos entregados A TIEMPO y COMPLETOS (sin devolución) / pedidos entregados. Dueño de datos: Díaz.
+    // --- Fórmulas Fase 1 (Logística) ---
     private async Task<decimal?> Otif(DateTime desde)
     {
         var e = await _db.PedidosVenta
@@ -127,7 +152,6 @@ public class DABI
         return 100m * e.Count(x => x.ATiempo && !x.ConDev) / e.Count;
     }
 
-    /// Cumplimiento = líneas recibidas completas (recibido >= pedido) / líneas recibidas. Dueño de datos: Lavado.
     private async Task<decimal?> CumplProveedores(DateTime desde)
     {
         var l = await _db.DetallesRecepcion
@@ -137,7 +161,6 @@ public class DABI
         return 100m * l.Count(x => x) / l.Count;
     }
 
-    /// Rotación = salidas del período / stock físico actual (Evaluado sobre Producto Terminado: Fresa). Dueño de datos: Méndez.
     private async Task<decimal?> Rotacion(DateTime desde)
     {
         var salidas = await _db.MovimientosKardex
@@ -150,7 +173,6 @@ public class DABI
         return Math.Abs(salidas) / stock;
     }
 
-    /// Exactitud = 100 - (diferencias de conteo / stock) x 100. Ajustes cuyo TipoAjuste contiene "Conteo". Dueño: Méndez.
     private async Task<decimal?> Exactitud(DateTime desde)
     {
         var conteos = _db.AjustesInventario.Where(a => a.Fecha >= desde && a.TipoAjuste.Contains("Conteo"));
@@ -161,7 +183,6 @@ public class DABI
         return Math.Max(0, 100m - 100m * difs / stock);
     }
 
-    /// Costo logístico = gastos logísticos / ventas facturadas x 100.
     private async Task<decimal?> CostoLogistico(DateTime desde)
     {
         var gasto = await _db.GastosLogisticos.Where(g => g.FechaRegistro >= desde).SumAsync(g => (decimal?)g.Monto) ?? 0;
@@ -170,7 +191,6 @@ public class DABI
         return 100m * gasto / ventas;
     }
 
-    /// Merma = unidades de merma / unidades ingresadas x 100 (TipoAjuste = "Merma", TipoMovimiento = "Ingreso").
     private async Task<decimal?> Merma(DateTime desde)
     {
         var ingresos = await _db.MovimientosKardex
@@ -179,6 +199,44 @@ public class DABI
         var merma = await _db.AjustesInventario
             .Where(a => a.TipoAjuste == "Merma" && a.Fecha >= desde).SumAsync(a => (decimal?)Math.Abs(a.Cantidad)) ?? 0;
         return 100m * merma / ingresos;
+    }
+
+    // --- Fórmulas Fase 2 (Tesorería y Activos Fijos) ---
+    /// % de cartera cobrada = (MontoTotal - SaldoPendiente) / MontoTotal x 100. Dueño datos: Díaz.
+    private async Task<decimal?> EfectividadCobranza(DateTime desde)
+    {
+        var cxc = await _db.CuentasPorCobrar.Where(c => c.FechaEmision >= desde).ToListAsync();
+        var total = cxc.Sum(c => c.MontoTotal);
+        if (total <= 0) return null;
+        var cobrado = total - cxc.Sum(c => c.SaldoPendiente);
+        return 100m * cobrado / total;
+    }
+
+    /// % de obligaciones pagadas = (MontoTotal - SaldoPendiente) / MontoTotal x 100. Dueño datos: Changa.
+    private async Task<decimal?> CumplimientoPagos(DateTime desde)
+    {
+        var cxp = await _db.CuentasPorPagar.Where(c => c.FechaEmision >= desde).ToListAsync();
+        var total = cxp.Sum(c => c.MontoTotal);
+        if (total <= 0) return null;
+        var pagado = total - cxp.Sum(c => c.SaldoPendiente);
+        return 100m * pagado / total;
+    }
+
+    /// % de movimientos bancarios conciliados en el período. Dueño datos: Quito.
+    private async Task<decimal?> TasaConciliacion(DateTime desde)
+    {
+        var movs = await _db.MovimientosBancarios.Where(m => m.Fecha >= desde).Select(m => m.Conciliado).ToListAsync();
+        if (movs.Count == 0) return null;
+        return 100m * movs.Count(x => x) / movs.Count;
+    }
+
+    /// % Valor Neto en Libros vigente respecto al Costo de Adquisición de activos operativos. Dueños datos: Lavado / Méndez.
+    private async Task<decimal?> SaludPatrimonial()
+    {
+        var activos = await _db.ActivosFijos.Where(a => a.Estado == "Activo").ToListAsync();
+        var costo = activos.Sum(a => a.CostoAdquisicion);
+        if (costo <= 0) return null;
+        return 100m * activos.Sum(a => a.ValorNetoLibros) / costo;
     }
 
     // ===================== SERIES PARA GRÁFICOS =====================
@@ -225,7 +283,6 @@ public class DABI
         }).ToList();
     }
 
-    /// Pareto de mermas por artículo (los 8 mayores) con porcentaje acumulado.
     public async Task<List<ParetoItemVM>> ParetoMermasAsync(int dias)
     {
         var desde = DateTime.Today.AddDays(-dias);
