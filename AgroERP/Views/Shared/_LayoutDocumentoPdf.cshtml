@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - AgroERP</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #eef1f5;
+            color: #212529;
+            font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+            font-size: 0.9rem;
+        }
+        .pdf-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #1a2a40;
+            color: #fff;
+            padding: 10px 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        .hoja-a4 {
+            background: #ffffff;
+            width: 21cm;
+            min-height: 29.7cm;
+            padding: 1.5cm;
+            margin: 1.2cm auto 2cm auto;
+            border: 1px solid #d7dde5;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+        }
+        .pdf-footer {
+            margin-top: auto;
+            padding-top: 14px;
+            border-top: 1px solid #dee2e6;
+            font-size: 0.78rem;
+            color: #6c757d;
+        }
+        @@page {
+            size: A4;
+            margin: 10mm;
+        }
+        @@media print {
+            body {
+                background: #ffffff !important;
+                margin: 0;
+                padding: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .hoja-a4 {
+                width: auto;
+                min-height: auto;
+                margin: 0;
+                padding: 0;
+                border: none;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="pdf-toolbar no-print d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-file-earmark-pdf-fill text-danger fs-5"></i>
+            <span class="fw-semibold">@ViewData["Title"]</span>
+            @if (ViewData["CodigoDocumento"] != null)
+            {
+                <span class="badge bg-light text-dark ms-2">@ViewData["CodigoDocumento"]</span>
+            }
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-success btn-sm fw-semibold" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i>Guardar PDF / Imprimir
+            </button>
+            <button type="button" class="btn btn-outline-light btn-sm" onclick="if (window.opener) { window.close(); } else if (window.history.length > 1) { window.history.back(); } else { window.location.href='/Home/Index'; }">
+                <i class="bi bi-x-lg me-1"></i>Cerrar / Volver
+            </button>
+        </div>
+    </div>
+
+    <div class="hoja-a4">
+        <div class="d-flex justify-content-between align-items-start border-bottom border-2 border-success pb-3 mb-4">
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-leaf-fill text-success fs-4"></i>
+                    <h4 class="mb-0 fw-bold text-success">AGRO ERP</h4>
+                </div>
+                <div class="fw-semibold">Mi Paraíso Gramadal S.A.C.</div>
+                <small class="text-muted">Cultivo y Comercialización Agrícola · Huacho, Lima - Perú</small>
+            </div>
+            <div class="text-end">
+                <h5 class="mb-0 fw-bold text-primary text-uppercase">@ViewData["Title"]</h5>
+                @if (ViewData["CodigoDocumento"] != null)
+                {
+                    <div class="fs-6 fw-bold text-dark">@ViewData["CodigoDocumento"]</div>
+                }
+                @if (ViewData["SubtituloDocumento"] != null)
+                {
+                    <small class="text-muted">@ViewData["SubtituloDocumento"]</small>
+                }
+            </div>
+        </div>
+
+        <div>
+            @RenderBody()
+        </div>
+
+        <div class="pdf-footer d-flex justify-content-between">
+            <span>Documento emitido desde AgroERP · Mi Paraíso Gramadal S.A.C.</span>
+            <span>Fecha de emisión: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</span>
+        </div>
+    </div>
+</body>
+</html>
+

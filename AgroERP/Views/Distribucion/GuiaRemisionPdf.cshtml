@@ -1,0 +1,64 @@
+@model AgroERP.ViewModels.Distribucion.GuiaRemisionPdfVM
+@{
+    Layout = "~/Views/Shared/_LayoutDocumentoPdf.cshtml";
+    ViewData["Title"] = "Guía de Remisión Remitente";
+    ViewData["CodigoDocumento"] = $"GRE-{Model.GuiaId:D4}";
+    ViewData["SubtituloDocumento"] = $"Estado: {Model.EstadoGuia} · Pedido PED-{Model.PedidoVentaId:D4}";
+}
+
+<div class="row mb-4">
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Destinatario</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>Razón Social:</strong> @Model.Cliente</div>
+            <div><strong>RUC / DNI:</strong> @Model.ClienteRuc</div>
+            <div><strong>Motivo de Traslado:</strong> @Model.MotivoTraslado</div>
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Transporte y Unidad</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>Placa Vehículo:</strong> <span class="font-monospace fw-bold">@Model.PlacaVehiculo</span></div>
+            <div><strong>Conductor:</strong> @Model.Chofer</div>
+            <div><strong>Fecha Promesa Entrega:</strong> @Model.FechaPromesaEntrega.ToString("dd/MM/yyyy")</div>
+        </div>
+    </div>
+</div>
+
+<table class="table table-bordered align-middle mb-4">
+    <thead class="table-light">
+        <tr>
+            <th>Código</th>
+            <th>Descripción del Bien</th>
+            <th>Unidad</th>
+            <th>Lotes Despachados</th>
+            <th class="text-end">Cantidad</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Items)
+        {
+            <tr>
+                <td class="font-monospace">@item.CodigoArticulo</td>
+                <td class="fw-semibold">@item.Articulo</td>
+                <td>@item.Unidad</td>
+                <td class="small font-monospace">@item.Lotes</td>
+                <td class="text-end fw-bold">@item.Cantidad.ToString("N2")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div class="border rounded p-3 bg-light small mb-4">
+    <strong>Conformidad de Entrega (POD):</strong> La mercadería descrita fue despachada desde la Cámara de Acopio de Mi Paraíso Gramadal S.A.C. en condiciones óptimas de cadena de frío y calidad.
+</div>
+
+<div class="row mt-5 pt-4 text-center">
+    <div class="col-6">
+        <div class="border-top mx-4 pt-2 small text-muted">Firma Transportista (@Model.Chofer)</div>
+    </div>
+    <div class="col-6">
+        <div class="border-top mx-4 pt-2 small text-muted">Recibí Conforme (Cliente / Sello)</div>
+    </div>
+</div>
+

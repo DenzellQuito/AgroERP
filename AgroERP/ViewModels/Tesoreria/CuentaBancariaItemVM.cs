@@ -124,3 +124,23 @@ public class ConciliacionItemVM
     public string Estado { get; set; } = null!;
     public string UsuarioId { get; set; } = null!;
 }
+
+public class ActaConciliacionPdfVM
+{
+    public int ConciliacionId { get; set; }
+    public int CuentaBancariaId { get; set; }
+    public string Banco { get; set; } = "";
+    public string NumeroCuenta { get; set; } = "";
+    public string Moneda { get; set; } = "PEN";
+    public string Titular { get; set; } = "";
+    public DateTime FechaCorte { get; set; }
+    public decimal SaldoExtractoBanco { get; set; }
+    public decimal DepositosEnTransito { get; set; }
+    public decimal PagosPendientes { get; set; }
+    public decimal SaldoBancoConciliado { get; set; }
+    public decimal ComisionesBancarias { get; set; }
+    public decimal SaldoContableAjustado { get; set; }
+    public string Estado { get; set; } = "";
+    public string Responsable { get; set; } = "";
+    public List<MovimientoBancarioItemVM> MovimientosConciliados { get; set; } = new();
+}

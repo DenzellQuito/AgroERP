@@ -51,8 +51,17 @@ public class DACobranzas
         var cxc = await _db.CuentasPorCobrar.FindAsync(cuentaPorCobrarId);
         if (cxc == null) throw new Exception("Cuenta por cobrar no encontrada.");
         if (cxc.Estado == "Cobrado") throw new Exception("Esta cuenta ya está totalmente cobrada.");
+
+        monto = Math.Round(monto, 2, MidpointRounding.AwayFromZero);
         if (monto <= 0) throw new Exception("El monto debe ser mayor a cero.");
         if (monto > cxc.SaldoPendiente) throw new Exception("El monto a cobrar supera el saldo pendiente.");
+
+        var nroLimpio = (nroOperacion ?? string.Empty).Trim();
+        if (string.IsNullOrEmpty(nroLimpio))
+            throw new Exception("Debe ingresar un número de operación válido.");
+
+        if (await _db.CobranzasCliente.AnyAsync(c => c.NumeroOperacion == nroLimpio))
+            throw new Exception($"El número de operación '{nroLimpio}' ya fue registrado en otra cobranza.");
 
         using var transaction = await _db.Database.BeginTransactionAsync();
         try
@@ -63,7 +72,7 @@ public class DACobranzas
                 "Ingreso",
                 monto,
                 medioPago,
-                nroOperacion,
+                nroLimpio,
                 $"COB-{cxc.Id}"
             );
 
@@ -74,7 +83,7 @@ public class DACobranzas
                 CuentaBancariaId = cuentaBancariaId,
                 FechaCobro = DateTime.Now,
                 MedioPago = medioPago,
-                NumeroOperacion = nroOperacion,
+                NumeroOperacion = nroLimpio,
                 MontoCobrado = monto,
                 UsuarioId = usuarioId
             };

@@ -1,0 +1,95 @@
+@model AgroERP.ViewModels.Almacen.AlmacenDashboardViewModel
+@{
+    Layout = "~/Views/Shared/_LayoutDocumentoPdf.cshtml";
+    ViewData["Title"] = "Reporte de Inventario FEFO y Kardex";
+    ViewData["CodigoDocumento"] = $"INV-{DateTime.Now:yyyyMMdd}";
+    ViewData["SubtituloDocumento"] = $"Stock al {DateTime.Now:dd/MM/yyyy HH:mm}";
+}
+
+<div class="row g-2 mb-4 text-center">
+    <div class="col-3">
+        <div class="border rounded p-2 bg-light">
+            <div class="small text-muted">Stock Físico</div>
+            <div class="fw-bold fs-6">@Model.StockTotal.ToString("N2")</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="border rounded p-2 bg-light">
+            <div class="small text-muted">Stock Reservado</div>
+            <div class="fw-bold text-warning fs-6">@Model.StockReservado.ToString("N2")</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="border rounded p-2 bg-light">
+            <div class="small text-muted">Stock Disponible</div>
+            <div class="fw-bold text-success fs-6">@((Model.StockTotal - Model.StockReservado).ToString("N2"))</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="border rounded p-2 bg-light">
+            <div class="small text-muted">Lotes por Vencer (&le;30d)</div>
+            <div class="fw-bold text-danger fs-6">@Model.LotesPorVencer</div>
+        </div>
+    </div>
+</div>
+
+<h6 class="fw-bold text-secondary text-uppercase small">1. Existencias por Lote y Ubicación (FEFO)</h6>
+<table class="table table-bordered table-sm align-middle mb-4">
+    <thead class="table-light">
+        <tr>
+            <th>Artículo</th>
+            <th>Lote</th>
+            <th>Vencimiento</th>
+            <th>Calidad</th>
+            <th>Almacén / Zona</th>
+            <th class="text-end">Físico</th>
+            <th class="text-end">Reservado</th>
+            <th class="text-end">Disponible</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var x in Model.Existencias)
+        {
+            <tr>
+                <td class="fw-semibold">@x.Articulo</td>
+                <td class="font-monospace">@x.NumeroLote</td>
+                <td>@x.FechaVencimiento.ToString("dd/MM/yyyy")</td>
+                <td>@x.EstadoCalidad</td>
+                <td>@x.Almacen / @x.Zona</td>
+                <td class="text-end">@x.CantidadFisica.ToString("N2")</td>
+                <td class="text-end">@x.CantidadReservada.ToString("N2")</td>
+                <td class="text-end fw-bold">@x.Disponible.ToString("N2")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h6 class="fw-bold text-secondary text-uppercase small">2. Últimos Movimientos de Kardex</h6>
+<table class="table table-bordered table-sm align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>Fecha</th>
+            <th>Artículo</th>
+            <th>Lote</th>
+            <th>Movimiento</th>
+            <th class="text-end">Cantidad</th>
+            <th>Origen &rarr; Destino</th>
+            <th>Referencia</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var m in Model.Movimientos.Take(40))
+        {
+            <tr>
+                <td>@m.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                <td>@m.Articulo</td>
+                <td class="font-monospace">@m.Lote</td>
+                <td>@m.Tipo</td>
+                <td class="text-end fw-semibold">@m.Cantidad.ToString("N2")</td>
+                <td>@(m.Origen ?? "—") &rarr; @(m.Destino ?? "—")</td>
+                <td>@(m.Referencia ?? "—")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+

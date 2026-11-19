@@ -43,6 +43,7 @@ public class ComprasController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(int articuloId, decimal cantidad)
     {
         // 1. Obtenemos el usuario conectado dinámicamente
@@ -86,9 +87,59 @@ public class ComprasController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> EnviarAprobacion(int id)
     {
         await _da.EnviarAprobacionAsync(id);
+        TempData["Ok"] = "Requerimiento enviado a aprobación.";
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AprobarRequerimiento(int id)
+    {
+        try
+        {
+            await _da.AprobarRequerimientoAsync(id);
+            TempData["Ok"] = "Requerimiento aprobado. Habilitado para cotización.";
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RechazarRequerimiento(int id)
+    {
+        try
+        {
+            await _da.RechazarRequerimientoAsync(id);
+            TempData["Ok"] = "Requerimiento rechazado.";
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DevolverABorrador(int id)
+    {
+        try
+        {
+            await _da.DevolverABorradorAsync(id);
+            TempData["Ok"] = "Requerimiento devuelto a estado Borrador para corrección.";
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
         return RedirectToAction(nameof(Details), new { id });
     }
 
@@ -113,18 +164,27 @@ public class ComprasController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateProveedor(string ruc, string razonSocial, int nivelConfiabilidad)
     {
-        var proveedor = new AgroERP.Models.Maestros.Proveedor
+        try
         {
-            Ruc = ruc,
-            RazonSocial = razonSocial,
-            NivelConfiabilidad = nivelConfiabilidad
-        };
+            var proveedor = new AgroERP.Models.Maestros.Proveedor
+            {
+                Ruc = ruc,
+                RazonSocial = razonSocial,
+                NivelConfiabilidad = nivelConfiabilidad
+            };
 
-        await _da.CrearProveedorAsync(proveedor);
+            await _da.CrearProveedorAsync(proveedor);
 
-        return RedirectToAction(nameof(Proveedores));
+            return RedirectToAction(nameof(Proveedores));
+        }
+        catch (Exception ex)
+        {
+            ModelState.AddModelError("", ex.Message);
+            return View();
+        }
     }
 
     [HttpGet]
@@ -153,6 +213,7 @@ public class ComprasController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> AgregarCotizacion(int requerimientoId, int proveedorId, decimal precio, int dias)
     {
         await _da.RegistrarCotizacionAsync(requerimientoId, proveedorId, precio, dias);
@@ -160,6 +221,7 @@ public class ComprasController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Adjudicar(int cotizacionId, int requerimientoId)
     {
         await _da.AdjudicarCotizacionAsync(cotizacionId, requerimientoId);
@@ -167,10 +229,19 @@ public class ComprasController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> GenerarOrden(int requerimientoId)
     {
-        await _da.GenerarOrdenDesdeCotizacionAsync(requerimientoId);
-        return RedirectToAction(nameof(Ordenes));
+        try
+        {
+            await _da.GenerarOrdenDesdeCotizacionAsync(requerimientoId);
+            return RedirectToAction(nameof(Ordenes));
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = ex.Message;
+            return RedirectToAction(nameof(Cotizaciones), new { id = requerimientoId });
+        }
     }
 
     [HttpGet]
@@ -227,15 +298,23 @@ public class ComprasController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> RegistrarFlete(FleteViewModel model)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Challenge();
 
-        // Pásale userId como cuarto argumento
-        await _da.RegistrarFleteContableAsync(model.OrdenCompraId, model.CostoFlete, model.Glosa, userId);
-
-        return RedirectToAction(nameof(Ordenes));
+        try
+        {
+            // Pásale userId como cuarto argumento
+            await _da.RegistrarFleteContableAsync(model.OrdenCompraId, model.CostoFlete, model.Glosa, userId);
+            return RedirectToAction(nameof(Ordenes));
+        }
+        catch (Exception ex)
+        {
+            ModelState.AddModelError("", ex.Message);
+            return View(model);
+        }
     }
     [HttpGet]
     public async Task<IActionResult> LibroDiario()
@@ -247,6 +326,73 @@ public class ComprasController : Controller
             Fecha = a.FechaContable.ToString("dd/MM/yyyy HH:mm"),
             Glosa = a.Glosa,
             Referencia = $"{a.ReferenciaModulo} - {a.ReferenciaId}",
+            ReferenciaModulo = a.ReferenciaModulo,
+            ReferenciaId = a.ReferenciaId,
+            Usuario = a.UsuarioId,
+            Detalles = a.Detalles.Select(d => new DetalleAsientoViewModel
+            {
+                Cuenta = $"{d.Cuenta.Codigo} {d.Cuenta.Nombre}",
+                Debe = d.Debe,
+                Haber = d.Haber
+            }).ToList()
+        }).ToList();
+
+        return View(viewModel);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ActaAdjudicacionPdf(int id)
+    {
+        var req = await _da.ObtenerRequerimientoCompletoAsync(id);
+        if (req == null) return NotFound();
+
+        var vm = new ActaAdjudicacionPdfVM
+        {
+            RequerimientoId = req.Id,
+            FechaSolicitud = req.FechaSolicitud,
+            Estado = req.Estado,
+            Solicitante = req.UsuarioSolicitanteId,
+            Articulos = req.Detalles.Select(d => new ActaItemReqVM
+            {
+                Codigo = d.Articulo.Codigo,
+                Nombre = d.Articulo.Nombre,
+                Unidad = d.Articulo.UnidadMedida,
+                Cantidad = d.Cantidad
+            }).ToList(),
+            Ofertas = req.Cotizaciones
+                .OrderByDescending(c => c.EsGanador)
+                .ThenBy(c => c.PrecioOfertado)
+                .Select(c => new ActaOfertaVM
+                {
+                    Proveedor = c.Proveedor.RazonSocial,
+                    Ruc = c.Proveedor.Ruc,
+                    Confiabilidad = c.Proveedor.NivelConfiabilidad,
+                    Precio = c.PrecioOfertado,
+                    DiasEntrega = c.DiasEntrega,
+                    EsGanador = c.EsGanador
+                }).ToList()
+        };
+
+        return View(vm);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> LibroDiarioPdf(int? asientoId = null)
+    {
+        var asientos = await _da.ObtenerLibroDiarioAsync();
+        if (asientoId.HasValue)
+            asientos = asientos.Where(a => a.Id == asientoId.Value).ToList();
+
+        ViewBag.AsientoUnicoId = asientoId;
+        var viewModel = asientos.Select(a => new AsientoDiarioViewModel
+        {
+            Id = a.Id,
+            Fecha = a.FechaContable.ToString("dd/MM/yyyy HH:mm"),
+            Glosa = a.Glosa,
+            Referencia = $"{a.ReferenciaModulo} - {a.ReferenciaId}",
+            ReferenciaModulo = a.ReferenciaModulo,
+            ReferenciaId = a.ReferenciaId,
+            Usuario = a.UsuarioId,
             Detalles = a.Detalles.Select(d => new DetalleAsientoViewModel
             {
                 Cuenta = $"{d.Cuenta.Codigo} {d.Cuenta.Nombre}",

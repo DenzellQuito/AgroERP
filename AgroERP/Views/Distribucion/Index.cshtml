@@ -51,7 +51,7 @@
                             <td>@item.Total.ToString("C")</td>
                             <td>
                                 <span class="badge @(item.Estado == "Entregado" || item.Estado == "Facturado" ? "bg-success" : "bg-info text-dark")">
-                                    @item.Estado
+                                    @(item.TieneFactura ? "Facturado" : item.Estado)
                                 </span>
                             </td>
                             <td>
@@ -66,7 +66,7 @@
                                 }
                                 else if (item.Estado == "Pendiente" && !item.TieneStockReservado)
                                 {
-                                    <span class="badge bg-danger" title="No hay stock disponible en almac�n">
+                                    <span class="badge bg-danger" title="No hay stock disponible en almacén">
                                         <i class="bi bi-exclamation-triangle"></i> Sin Stock (ATP)
                                     </span>
                                 }
@@ -84,7 +84,7 @@
                                         </button>
                                     </form>
                                 }
-                                else if (item.Estado == "Entregado")
+                                else if (item.Estado == "Entregado" && !item.TieneFactura)
                                 {
                                     <form asp-action="Facturar" asp-route-id="@item.Id" method="post" style="display:inline;">
                                         <button type="submit" class="btn btn-sm btn-success">
@@ -92,6 +92,39 @@
                                         </button>
                                     </form>
                                 }
+                                else if (item.Estado == "Entregado" && item.TieneFactura)
+                                {
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check2-all"></i> Facturado (En CxC)
+                                    </span>
+                                }
+
+                                <div class="d-inline-flex gap-1 ms-1">
+                                    @if (item.OrdenPickingId.HasValue)
+                                    {
+                                        <a asp-action="HojaPickingPdf" asp-route-id="@item.OrdenPickingId" target="_blank" class="btn btn-sm btn-outline-secondary" title="Hoja de Picking PDF">
+                                            <i class="bi bi-file-earmark-text"></i> Picking
+                                        </a>
+                                    }
+                                    @if (item.GuiaRemisionId.HasValue)
+                                    {
+                                        <a asp-action="GuiaRemisionPdf" asp-route-id="@item.GuiaRemisionId" target="_blank" class="btn btn-sm btn-outline-info" title="Guía de Remisión PDF">
+                                            <i class="bi bi-file-earmark-pdf"></i> GRE
+                                        </a>
+                                    }
+                                    @if (item.ComprobantePagoId.HasValue)
+                                    {
+                                        <a asp-action="FacturaPdf" asp-route-id="@item.ComprobantePagoId" target="_blank" class="btn btn-sm btn-outline-danger" title="Factura Electrónica PDF">
+                                            <i class="bi bi-file-earmark-pdf-fill"></i> Factura
+                                        </a>
+                                    }
+                                    @if (item.UltimaNotaCreditoId.HasValue)
+                                    {
+                                        <a asp-action="NotaCreditoPdf" asp-route-id="@item.UltimaNotaCreditoId" target="_blank" class="btn btn-sm btn-outline-warning text-dark" title="Nota de Crédito PDF">
+                                            <i class="bi bi-file-earmark-minus"></i> NC
+                                        </a>
+                                    }
+                                </div>
                             </td>
                         </tr>
                     }
@@ -100,7 +133,7 @@
                 {
                     <tr>
                         <td colspan="6" class="text-center text-muted py-4">
-                            No hay pedidos registrados a�n.
+                            No hay pedidos registrados aún.
                         </td>
                     </tr>
                 }

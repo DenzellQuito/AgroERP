@@ -138,9 +138,12 @@
                             <td class="text-end fw-bold">S/ @a.ValorNetoLibros.ToString("N2")</td>
                             <td class="text-center"><span class="badge @badge">@a.Estado</span></td>
                             <td class="text-end">
-                                @if (a.Estado != "DadoDeBaja")
-                                {
-                                    <div class="d-inline-flex gap-1">
+                                <div class="d-inline-flex gap-1">
+                                    <a asp-controller="Activos" asp-action="FichaPdf" asp-route-id="@a.Id" target="_blank" class="btn btn-sm btn-outline-secondary" title="Ficha Patrimonial PDF">
+                                        <i class="bi bi-file-earmark-pdf"></i>
+                                    </a>
+                                    @if (a.Estado != "DadoDeBaja")
+                                    {
                                         <button type="button" class="btn btn-sm btn-outline-primary btn-abrir" title="Trasladar"
                                                 data-bs-toggle="modal" data-bs-target="#modalTransferencia" data-activo="@a.Id">
                                             <i class="bi bi-arrow-left-right"></i>
@@ -156,8 +159,8 @@
                                                 <i class="bi bi-x-octagon"></i>
                                             </button>
                                         }
-                                    </div>
-                                }
+                                    }
+                                </div>
                             </td>
                         </tr>
                     }

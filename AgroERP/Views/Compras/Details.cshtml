@@ -6,9 +6,18 @@
 }
 
 <div class="container mt-4">
+    @if (TempData["Ok"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">@TempData["Ok"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    }
+
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>Requerimiento: REQ-@Model.Id.ToString("D4")</h2>
-        <span class="badge @(Model.Estado == "Borrador" ? "bg-secondary fs-6" : "bg-warning text-dark fs-6")">
+        <span class="badge @(Model.Estado == "Borrador" ? "bg-secondary fs-6" : Model.Estado == "Aprobado" ? "bg-success fs-6" : Model.Estado == "Rechazado" ? "bg-danger fs-6" : "bg-warning text-dark fs-6")">
             @Model.Estado
         </span>
     </div>
@@ -44,14 +53,36 @@
         </tbody>
     </table>
 
-    <div class="mt-4 d-flex">
-        <a href="@Url.Action("Index")" class="btn btn-secondary me-2">Volver a la lista</a>
-        <a href="@Url.Action("Cotizaciones", new { id = Model.Id })" class="btn btn-info me-2">Ver Cotizaciones</a>
+    <div class="mt-4 d-flex gap-2">
+        <a href="@Url.Action("Index")" class="btn btn-secondary">Volver a la lista</a>
+        @if (Model.Estado != "Rechazado")
+        {
+            <a href="@Url.Action("Cotizaciones", new { id = Model.Id })" class="btn btn-info">Ver Cotizaciones</a>
+        }
         @if (Model.Estado == "Borrador")
         {
-            <form asp-action="EnviarAprobacion" method="post">
+            <form asp-action="EnviarAprobacion" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
                 <input type="hidden" name="id" value="@Model.Id" />
                 <button type="submit" class="btn btn-primary">Enviar a Aprobación</button>
+            </form>
+        }
+        else if (Model.Estado == "PendienteAprobacion")
+        {
+            <form asp-action="AprobarRequerimiento" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-success">Aprobar Requerimiento</button>
+            </form>
+            <form asp-action="DevolverABorrador" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-warning">Solicitar Corrección (Borrador)</button>
+            </form>
+            <form asp-action="RechazarRequerimiento" method="post" class="d-inline" onsubmit="return confirm('¿Rechazar este requerimiento?');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-danger">Rechazar</button>
             </form>
         }
     </div>

@@ -32,7 +32,7 @@ public class TesoreriaController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var err = await _da.CrearCuentaBancariaAsync(vm);
+        var err = await _da.CrearCuentaBancariaAsync(vm, UsuarioActualId);
         if (err != null) TempData["Error"] = err;
         else TempData["Ok"] = $"Cuenta bancaria {vm.Banco} ({vm.NumeroCuenta}) registrada correctamente.";
 
@@ -60,7 +60,7 @@ public class TesoreriaController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var err = await _da.RegistrarMovimientoManualAsync(vm);
+        var err = await _da.RegistrarMovimientoManualAsync(vm, UsuarioActualId);
         if (err != null) TempData["Error"] = err;
         else TempData["Ok"] = $"Movimiento de {vm.TipoMovimiento} por S/ {vm.Monto:N2} registrado en Libro Bancos.";
 
@@ -101,5 +101,20 @@ public class TesoreriaController : Controller
 
         TempData["Ok"] = "Conciliación bancaria cuadrada, contabilizada y cerrada exitosamente.";
         return RedirectToAction(nameof(Conciliar), new { id = vm.CuentaBancariaId });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ActaConciliacionPdf(int id)
+    {
+        var vm = await _da.ObtenerActaConciliacionAsync(id);
+        if (vm == null) return NotFound();
+        return View(vm);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> FlujoCajaPdf()
+    {
+        var vm = await _da.ObtenerDashboardAsync();
+        return View(vm);
     }
 }

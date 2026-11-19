@@ -6,14 +6,48 @@
 }
 
 <div class="container mt-4">
-    <h2 class="mb-4">Libro Diario (Solo Lectura)</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Libro Diario (Solo Lectura)</h2>
+        <a asp-action="LibroDiarioPdf" target="_blank" class="btn btn-danger">
+            <i class="bi bi-file-earmark-pdf-fill me-1"></i>Exportar Libro Diario PDF
+        </a>
+    </div>
 
     @foreach (var asiento in Model)
     {
+        string? urlOrigen = asiento.ReferenciaModulo switch
+        {
+            "Compras" when asiento.ReferenciaId.HasValue => Url.Action("GenerarPdf", "Compras", new { id = asiento.ReferenciaId }),
+            "Recepcion" when asiento.ReferenciaId.HasValue => Url.Action("ReporteRecepcionPdf", "Calidad", new { id = asiento.ReferenciaId }),
+            "Merma" => Url.Action("Index", "Almacen"),
+            "Factura" when asiento.ReferenciaId.HasValue => Url.Action("FacturaPdf", "Distribucion", new { id = asiento.ReferenciaId }),
+            "NotaCredito" when asiento.ReferenciaId.HasValue => Url.Action("NotaCreditoPdf", "Distribucion", new { id = asiento.ReferenciaId }),
+            "Cobranza" => Url.Action("Index", "Cobranza"),
+            "Pagos" => Url.Action("Index", "Pagos"),
+            "Conciliacion" when asiento.ReferenciaId.HasValue => Url.Action("Conciliar", "Tesoreria", new { id = asiento.ReferenciaId }),
+            "Tesoreria" => Url.Action("Index", "Tesoreria"),
+            "AltaActivo" or "Depreciacion" or "MantenimientoActivo" or "MejoraActivo" when asiento.ReferenciaId.HasValue => Url.Action("FichaPdf", "Activos", new { id = asiento.ReferenciaId }),
+            "BajaActivo" => Url.Action("Index", "Patrimonio"),
+            _ => null
+        };
+
         <div class="card shadow-sm mb-4 border-primary">
-            <div class="card-header bg-primary text-white d-flex justify-content-between">
-                <strong>Asiento #@asiento.Id.ToString("D4") | @asiento.Referencia</strong>
-                <span>@asiento.Fecha</span>
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <strong>Asiento #@asiento.Id.ToString("D4") | @asiento.Referencia</strong>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="small">@asiento.Fecha</span>
+                    @if (!string.IsNullOrEmpty(urlOrigen))
+                    {
+                        <a href="@urlOrigen" target="_blank" class="btn btn-sm btn-light text-dark fw-semibold">
+                            <i class="bi bi-box-arrow-up-right me-1"></i>Ver Documento Origen
+                        </a>
+                    }
+                    <a asp-action="LibroDiarioPdf" asp-route-asientoId="@asiento.Id" target="_blank" class="btn btn-sm btn-warning text-dark fw-semibold">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Voucher PDF
+                    </a>
+                </div>
             </div>
             <div class="card-body py-2 bg-light">
                 <p class="mb-2 text-muted"><em>Glosa: @asiento.Glosa</em></p>

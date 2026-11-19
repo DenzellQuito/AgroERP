@@ -3,10 +3,17 @@
 @{
     Layout = "~/Views/Shared/_LayoutContabilidad.cshtml";
     ViewData["Title"] = "Cuentas por Pagar y Programación de Pagos";
+    var ordenesPendientes = ViewBag.OrdenesPendientes as List<AgroERP.ViewModels.Pagos.OrdenCompraPendienteCxPVM> ?? new();
+    var pagosEjecutados = ViewBag.PagosEjecutados as List<AgroERP.ViewModels.Pagos.PagoEjecutadoItemVM> ?? new();
 }
 
 <div class="container-fluid mt-4">
-    <h2 class="mb-4">Bandeja de Cuentas por Pagar y Programación</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Bandeja de Cuentas por Pagar y Programación</h2>
+        <a asp-action="PropuestaPagosPdf" target="_blank" class="btn btn-danger">
+            <i class="bi bi-file-earmark-pdf-fill me-1"></i>Propuesta de Pagos PDF
+        </a>
+    </div>
 
     @if (TempData["Ok"] != null)
     {
@@ -20,6 +27,53 @@
         <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
             <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (ordenesPendientes.Any())
+    {
+        <div class="card shadow-sm border-primary mb-4">
+            <div class="card-header bg-primary text-white fw-bold">
+                <i class="bi bi-receipt-cutoff me-2"></i>Registrar Factura de Proveedor (Cruce contra Orden de Compra Recepcionada)
+            </div>
+            <div class="card-body">
+                <form asp-action="RegistrarFacturaOC" method="post" class="row g-2 align-items-end">
+                    @Html.AntiForgeryToken()
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Orden de Compra Recepcionada</label>
+                        <select name="ordenCompraId" class="form-select" required>
+                            <option value="">-- Seleccione OC recepcionada --</option>
+                            @foreach (var oc in ordenesPendientes)
+                            {
+                                <option value="@oc.OrdenCompraId">
+                                    OC-@oc.OrdenCompraId.ToString("D4") · @oc.Proveedor · Conforme: S/ @oc.MontoConforme.ToString("N2") (@oc.EstadoOrden)
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">N° Factura Proveedor</label>
+                        <input type="text" name="numeroFactura" class="form-control" maxlength="30" placeholder="Ej. F001-000412" required />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold">Prioridad</label>
+                        <select name="prioridad" class="form-select">
+                            <option value="Alta">Alta</option>
+                            <option value="Media" selected>Media</option>
+                            <option value="Baja">Baja</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label fw-semibold">Días</label>
+                        <input type="number" name="diasVencimiento" class="form-control" min="0" max="365" value="30" required />
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i>Registrar CxP
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     }
 
@@ -77,21 +131,90 @@
                                     }
                                 </td>
                                 <td>
-                                    @if (item.Estado == "Pendiente")
-                                    {
-                                        <a href="@Url.Action("Programar", new { id = item.Id })" class="btn btn-sm btn-info">Programar</a>
-                                    }
-                                    else if (item.Estado == "Programado")
-                                    {
-                                        <a href="@Url.Action("Autorizar", new { id = item.Id })" class="btn btn-sm btn-primary">Autorizar</a>
-                                    }
-                                    else if (item.Estado == "Autorizado" || item.Estado == "PagadoParcial")
-                                    {
-                                        <a href="@Url.Action("Pagar", new { id = item.Id })" class="btn btn-sm btn-success">Pagar</a>
-                                    }
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @if (item.Estado == "Pendiente")
+                                        {
+                                            <form asp-action="Programar" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <button type="submit" class="btn btn-sm btn-info">Programar</button>
+                                            </form>
+                                        }
+                                        else if (item.Estado == "Programado")
+                                        {
+                                            <form asp-action="Autorizar" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <button type="submit" class="btn btn-sm btn-primary">Autorizar</button>
+                                            </form>
+                                        }
+                                        else if (item.Estado == "Autorizado" || item.Estado == "PagadoParcial")
+                                        {
+                                            <a href="@Url.Action("Pagar", new { id = item.Id })" class="btn btn-sm btn-success">Pagar</a>
+                                        }
+                                        @if (item.OrdenCompraId.HasValue)
+                                        {
+                                            <a asp-controller="Compras" asp-action="GenerarPdf" asp-route-id="@item.OrdenCompraId" target="_blank" class="btn btn-sm btn-outline-secondary" title="Ver Orden de Compra PDF">
+                                                📄 OC
+                                            </a>
+                                            <a asp-controller="Calidad" asp-action="ReportePorOrdenPdf" asp-route-ordenCompraId="@item.OrdenCompraId" target="_blank" class="btn btn-sm btn-outline-warning text-dark" title="Ver Reporte de Recepción y Calidad">
+                                                📄 Calidad
+                                            </a>
+                                        }
+                                    </div>
                                 </td>
                             </tr>
                         }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0"><i class="bi bi-receipt me-2 text-success"></i>Historial de Pagos Ejecutados (Vouchers de Egreso)</h6>
+            <span class="badge bg-secondary">@pagosEjecutados.Count registro(s)</span>
+        </div>
+        <div class="card-body table-responsive p-0">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Proveedor</th>
+                        <th>Tipo / Factura</th>
+                        <th>Cuenta Bancaria</th>
+                        <th>N° Operación</th>
+                        <th class="text-end">Pagado</th>
+                        <th class="text-end">Documentos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!pagosEjecutados.Any())
+                    {
+                        <tr><td colspan="7" class="text-center text-muted py-3">Aún no se han ejecutado pagos a proveedores.</td></tr>
+                    }
+                    @foreach (var p in pagosEjecutados)
+                    {
+                        <tr>
+                            <td class="small">@p.FechaPago.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="fw-semibold">@p.Proveedor</td>
+                            <td class="small">@p.TipoObligacion · <span class="font-monospace">@p.NumeroFactura</span></td>
+                            <td class="small">@p.Banco</td>
+                            <td class="font-monospace small">@p.NumeroOperacion (@p.MedioPago)</td>
+                            <td class="text-end fw-bold text-success">S/ @p.MontoPagado.ToString("N2")</td>
+                            <td class="text-end">
+                                <a asp-action="VoucherPagoPdf" asp-route-id="@p.PagoId" target="_blank" class="btn btn-sm btn-outline-danger">
+                                    📄 Voucher PDF
+                                </a>
+                                @if (p.OrdenCompraId.HasValue)
+                                {
+                                    <a asp-controller="Compras" asp-action="GenerarPdf" asp-route-id="@p.OrdenCompraId" target="_blank" class="btn btn-sm btn-outline-secondary ms-1">
+                                        📄 OC
+                                    </a>
+                                }
+                            </td>
+                        </tr>
                     }
                 </tbody>
             </table>

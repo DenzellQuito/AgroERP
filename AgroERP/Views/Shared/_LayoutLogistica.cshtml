@@ -1,4 +1,8 @@
-﻿<!DOCTYPE html>
+﻿@{
+    var ctrlActual = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var actActual = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+}
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
@@ -87,47 +91,66 @@
 
         <ul class="list-unstyled components">
             <!-- Opción: Inicio / Dashboard -->
-            <li class="active">
+            <li class="@(ctrlActual == "Home" ? "active" : "")">
                 <a href="/Home/Index"><i class="bi bi-house-door"></i> Inicio</a>
             </li>
 
             <li class="px-3 mt-3 mb-1 text-uppercase text-white-50" style="font-size: 0.75rem;">Módulos Logísticos</li>
 
             <!-- 1. Planificación -->
-            <li>
+            <li class="@(ctrlActual == "Planificacion" ? "active" : "")">
                 <a href="/Planificacion/Index"><i class="bi bi-bar-chart-steps"></i> Planificación</a>
-                <a asp-controller="Articulos" asp-action="Index">Artículos</a>
-                <a asp-controller="Campanias" asp-action="Index">Campañas</a>
-                <a asp-controller="Recetas" asp-action="Index">Recetas (BOM)</a>
+            </li>
+
+            <li class="@(ctrlActual == "Articulos" ? "active" : "")">
+                <a href="/Articulos/Index"> Artículos</a>
+            </li>
+
+            <li class="@(ctrlActual == "Campanias" ? "active" : "")">
+                <a href="/Campanias/Index"> Campañas</a>
+            </li>
+
+            <li class="@(ctrlActual == "Recetas" ? "active" : "")">
+                <a href="/Recetas/Index"> Recetas (BOM)</a>
             </li>
 
             <!-- 2. Compras -->
-            <li>
+            <li class="@(ctrlActual == "Compras" && actActual != "LibroDiario" ? "active" : "")">
                 <a href="/Compras/Index"><i class="bi bi-cart3"></i> Compras</a>
-                <a asp-controller="Compras" asp-action="Ordenes">Órdenes de compra</a>
-                <a asp-controller="Compras" asp-action="Proveedores">Proveedores</a>
+            </li>
+
+            <li class="@(actActual == "Ordenes" ? "active" : "")">
+                <a href="/Compras/Ordenes"> Órdenes de compra</a>
+            </li>
+
+            <li class="@(actActual == "Proveedores" ? "active" : "")">
+                <a href="/Compras/Proveedores"> Proveedores</a>
             </li>
 
             <!-- 3. Recepción y Calidad -->
-            <li>
+            <li class="@(ctrlActual == "Calidad" ? "active" : "")">
                 <a href="/Calidad/Index"><i class="bi bi-clipboard-check"></i> Recepción y Calidad</a>
-                <a asp-controller="Calidad" asp-action="Inspeccionar">Inspección</a>
+            </li>
+
+            <li class="@(actActual == "Inspeccionar" ? "active" : "")">
+                <a href="/Calidad/Inspeccionar"> Inspección</a>
             </li>
 
             <!-- 4. Almacenes e Inventarios -->
-            <li>
+            <li class="@(ctrlActual == "Almacen" ? "active" : "")">
                 <a href="/Almacen/Index"><i class="bi bi-box-seam"></i> Almacenes e Inventarios</a>
             </li>
 
             <!-- 5. Distribución y Entrega -->
-            <li>
+            <li class="@(ctrlActual == "Distribucion" ? "active" : "")">
                 <a href="/Distribucion/Index"><i class="bi bi-truck"></i> Distribución y Entrega</a>
             </li>
 
             <!-- 6. Control de Gestión -->
-            <li>
+            <li class="@(ctrlActual == "BI" ? "active" : "")">
                 <a href="/BI/Dashboard"><i class="bi bi-graph-up-arrow"></i> Control de Gestión (BI)</a>
             </li>
+
         </ul>
     </nav>
 
@@ -152,9 +175,13 @@
                 <div class="d-flex align-items-center gap-2 border-start ps-3">
                     <i class="bi bi-person-circle fs-4 text-primary"></i>
                     <div class="lh-1">
-                        <span class="d-block fw-bold text-dark small">Denzell.Admin</span>
-                        <span class="text-muted" style="font-size: 0.7rem;">Gerencia</span>
+                        <span class="d-block fw-bold text-dark small">@(User.Identity?.Name ?? "Usuario")</span>
+                        <span class="text-muted" style="font-size: 0.7rem;">Logística</span>
                     </div>
+                    <form method="post" action="/Account/Logout" class="d-inline ms-2">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-danger btn-sm">Salir</button>
+                    </form>
                 </div>
             </div>
         </div>

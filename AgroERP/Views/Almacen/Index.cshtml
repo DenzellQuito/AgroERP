@@ -17,11 +17,14 @@
 
 <div class="alm-header d-flex flex-wrap justify-content-between align-items-center gap-3">
     <div>
-        <div class="text-uppercase small opacity-75 mb-1">MP04 · MP04.P02 · MP04.P02.SP02</div>
         <h2 class="fw-bold mb-1">Gestión de Almacenes e Inventarios</h2>
         <div class="opacity-75">Trazabilidad de lotes, control de existencias, picking, traslados y mermas.</div>
     </div>
-    <div class="text-end"><span class="badge bg-light text-success px-3 py-2"></span></div>
+    <div class="text-end">
+        <a asp-action="ReporteInventarioPdf" target="_blank" class="btn btn-light text-danger fw-semibold btn-sm">
+            <i class="bi bi-file-earmark-pdf-fill me-1"></i>Reporte Stock y Kardex PDF
+        </a>
+    </div>
 </div>
 
 @if (TempData["Ok"] != null) { <div class="alert alert-success alert-dismissible fade show">@TempData["Ok"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div> }
@@ -127,9 +130,9 @@
     </div>
 </div>
 
-<div class="card alm-section"><div class="card-header"><i class="bi bi-list-check me-2 text-success"></i>Órdenes de picking recientes</div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Orden</th><th>Pedido</th><th>Operario</th><th>Detalles</th><th class="text-end">Cantidad preparada</th></tr></thead><tbody>
-@if(Model.OrdenesPicking.Count==0){<tr><td colspan="5" class="text-center text-muted py-3">No hay órdenes de picking registradas.</td></tr>}
-@foreach(var p in Model.OrdenesPicking){<tr><td>#@p.Id</td><td>#@p.PedidoId</td><td>@p.OperarioId</td><td>@p.Detalles</td><td class="text-end">@p.CantidadTotal.ToString("N2")</td></tr>}
+<div class="card alm-section"><div class="card-header"><i class="bi bi-list-check me-2 text-success"></i>Órdenes de picking recientes</div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Orden</th><th>Pedido</th><th>Operario</th><th>Detalles</th><th class="text-end">Cantidad preparada</th><th class="text-end">Documento</th></tr></thead><tbody>
+@if(Model.OrdenesPicking.Count==0){<tr><td colspan="6" class="text-center text-muted py-3">No hay órdenes de picking registradas.</td></tr>}
+@foreach(var p in Model.OrdenesPicking){<tr><td>#@p.Id</td><td>#@p.PedidoId</td><td>@p.OperarioId</td><td>@p.Detalles</td><td class="text-end">@p.CantidadTotal.ToString("N2")</td><td class="text-end"><a asp-controller="Distribucion" asp-action="HojaPickingPdf" asp-route-id="@p.Id" target="_blank" class="btn btn-sm btn-outline-danger">📄 Hoja Picking</a></td></tr>}
 </tbody></table></div></div>
 
 <div class="card alm-section"><div class="card-header"><i class="bi bi-journal-text me-2 text-success"></i>Kardex · últimos 200 movimientos</div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Fecha</th><th>Artículo</th><th>Lote</th><th>Movimiento</th><th class="text-end">Cantidad</th><th>Origen</th><th>Destino</th><th>Referencia</th></tr></thead><tbody>

@@ -92,6 +92,13 @@ public class DADistribucion
 
         if (detallePedido == null) throw new Exception("El artículo no pertenece al pedido original.");
 
+        decimal yaDevuelto = await _db.DevolucionesCliente
+            .Where(d => d.PedidoVentaId == pedidoId && d.ArticuloId == articuloId)
+            .SumAsync(d => (decimal?)d.CantidadRechazada) ?? 0m;
+
+        if (yaDevuelto + cantidadRechazada > detallePedido.Cantidad)
+            throw new Exception($"La cantidad total devuelta ({yaDevuelto + cantidadRechazada:N2}) supera la cantidad vendida ({detallePedido.Cantidad:N2}).");
+
         decimal totalDevolucion = Math.Round(cantidadRechazada * detallePedido.PrecioUnitario, 2, MidpointRounding.AwayFromZero);
 
         // Validación extra: No devolver más de lo que debe
@@ -129,15 +136,9 @@ public class DADistribucion
             _db.NotaCredito.Add(notaCredito);
             await _db.SaveChangesAsync();
 
-            var idRealNota = await _db.NotaCredito
-                .Where(n => n.DevolucionId == devolucion.Id)
-                .OrderByDescending(n => n.Id)
-                .Select(n => n.Id)
-                .FirstOrDefaultAsync();
-
             await _contabilidad.RegistrarAsiento(
                 modulo: "NotaCredito",
-                referenciaId: idRealNota,
+                referenciaId: notaCredito.Id,
                 glosa: $"Nota de Crédito por Devolución {devolucion.Id} - Pedido {pedido.Id}",
                 usuarioId: usuarioId,
                 (Cuentas.VentasProductos, netoDevolucion, 0m),

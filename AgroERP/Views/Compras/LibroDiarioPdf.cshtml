@@ -1,0 +1,63 @@
+@model IEnumerable<AgroERP.ViewModels.Compras.AsientoDiarioViewModel>
+@{
+    Layout = "~/Views/Shared/_LayoutDocumentoPdf.cshtml";
+    int? asientoUnicoId = ViewBag.AsientoUnicoId as int?;
+    ViewData["Title"] = asientoUnicoId.HasValue ? "Voucher de Asiento Contable" : "Libro Diario Contable (PCGE)";
+    ViewData["CodigoDocumento"] = asientoUnicoId.HasValue ? $"ASIENTO #{asientoUnicoId.Value:D4}" : $"{Model.Count()} Asientos";
+    ViewData["SubtituloDocumento"] = "Principio de Partida Doble · Moneda: PEN (S/)";
+    var totalDebe = Model.SelectMany(a => a.Detalles).Sum(d => d.Debe);
+    var totalHaber = Model.SelectMany(a => a.Detalles).Sum(d => d.Haber);
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-light border text-center">No hay asientos contables registrados.</div>
+}
+else
+{
+    @foreach (var asiento in Model)
+    {
+        <div class="border rounded mb-3" style="break-inside: avoid;">
+            <div class="bg-light px-3 py-2 border-bottom d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>Asiento #@asiento.Id.ToString("D4")</strong> ·
+                    <span class="badge bg-secondary">@asiento.Referencia</span>
+                    <small class="text-muted ms-2">@asiento.Glosa</small>
+                </div>
+                <small class="text-muted">@asiento.Fecha</small>
+            </div>
+            <table class="table table-sm table-bordered mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Cuenta Contable</th>
+                        <th class="text-end" style="width: 18%;">Debe (S/)</th>
+                        <th class="text-end" style="width: 18%;">Haber (S/)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var det in asiento.Detalles)
+                    {
+                        <tr>
+                            <td>@det.Cuenta</td>
+                            <td class="text-end">@(det.Debe > 0 ? det.Debe.ToString("N2") : "")</td>
+                            <td class="text-end">@(det.Haber > 0 ? det.Haber.ToString("N2") : "")</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="table-light fw-bold">
+                    <tr>
+                        <td class="text-end">Subtotal Asiento:</td>
+                        <td class="text-end">S/ @asiento.Detalles.Sum(d => d.Debe).ToString("N2")</td>
+                        <td class="text-end">S/ @asiento.Detalles.Sum(d => d.Haber).ToString("N2")</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+
+    <div class="border border-2 border-dark rounded p-3 bg-light d-flex justify-content-between align-items-center fw-bold">
+        <span>TOTAL GENERAL DEL REPORTE (DEBE = HABER)</span>
+        <span>Debe: S/ @totalDebe.ToString("N2") &nbsp;|&nbsp; Haber: S/ @totalHaber.ToString("N2")</span>
+    </div>
+}
+

@@ -1,0 +1,77 @@
+@model AgroERP.ViewModels.Calidad.ReporteRecepcionCalidadPdfVM
+@{
+    Layout = "~/Views/Shared/_LayoutDocumentoPdf.cshtml";
+    ViewData["Title"] = "Constancia de Recepción e Inspección de Calidad";
+    ViewData["CodigoDocumento"] = $"REC-{Model.RecepcionId:D4}";
+    ViewData["SubtituloDocumento"] = $"OC-{Model.OrdenCompraId:D4} · Guía {Model.GuiaProveedor}";
+}
+
+<div class="row mb-4">
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Proveedor y Documento</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>Proveedor:</strong> @Model.Proveedor</div>
+            <div><strong>RUC:</strong> @Model.ProveedorRuc</div>
+            <div><strong>Guía Remisión Proveedor:</strong> @Model.GuiaProveedor</div>
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Trazabilidad de Recepción</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>Orden de Compra:</strong> OC-@Model.OrdenCompraId.ToString("D4") (@Model.EstadoOrden)</div>
+            <div><strong>Fecha Recepción:</strong> @Model.FechaRecepcion.ToString("dd/MM/yyyy HH:mm")</div>
+            <div><strong>Receptor:</strong> @Model.Receptor · <strong>Estado:</strong> @Model.EstadoRecepcion</div>
+        </div>
+    </div>
+</div>
+
+<h6 class="fw-bold text-secondary text-uppercase small">Detalle de 3-Way Matching y Dictamen de Calidad</h6>
+<table class="table table-bordered table-sm align-middle mb-4">
+    <thead class="table-light">
+        <tr>
+            <th>Artículo</th>
+            <th>Lote</th>
+            <th>Vencimiento</th>
+            <th class="text-end">Pedida (OC)</th>
+            <th class="text-end">Guía</th>
+            <th class="text-end">Recibida</th>
+            <th class="text-center">Dictamen</th>
+            <th>Inspector / Obs.</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var d in Model.Detalles)
+        {
+            <tr>
+                <td class="fw-semibold">@d.Articulo</td>
+                <td class="font-monospace">@d.NumeroLote</td>
+                <td>@d.FechaVencimiento.ToString("dd/MM/yyyy")</td>
+                <td class="text-end">@d.CantidadPedida.ToString("N2")</td>
+                <td class="text-end">@d.CantidadGuia.ToString("N2")</td>
+                <td class="text-end fw-bold">@d.CantidadRecibida.ToString("N2")</td>
+                <td class="text-center">
+                    <span class="badge @(d.EstadoCalidad == "Liberado" ? "bg-success" : d.EstadoCalidad == "Rechazado" ? "bg-danger" : "bg-warning text-dark")">
+                        @d.EstadoCalidad
+                    </span>
+                </td>
+                <td class="small">
+                    <div>@d.Inspector</div>
+                    @if (!string.IsNullOrWhiteSpace(d.MotivoRechazo))
+                    {
+                        <div class="text-danger">Obs: @d.MotivoRechazo</div>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div class="row mt-5 pt-4 text-center">
+    <div class="col-6">
+        <div class="border-top mx-4 pt-2 small text-muted">Responsable de Recepción (@Model.Receptor)</div>
+    </div>
+    <div class="col-6">
+        <div class="border-top mx-4 pt-2 small text-muted">Control de Calidad (Liberación / Rechazo)</div>
+    </div>
+</div>
+

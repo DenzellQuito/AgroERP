@@ -1,0 +1,88 @@
+@model AgroERP.ViewModels.BI.DashboardVM
+@{
+    Layout = "~/Views/Shared/_LayoutDocumentoPdf.cshtml";
+    ViewData["Title"] = "Informe Ejecutivo de KPIs y Mejora Continua";
+    ViewData["CodigoDocumento"] = $"BI-{DateTime.Now:yyyyMMdd}";
+    ViewData["SubtituloDocumento"] = $"Ventana de evaluación: Últimos {Model.Dias} días";
+}
+
+<h6 class="fw-bold text-secondary text-uppercase small">1. Tablero de Indicadores de Desempeño (KPI)</h6>
+<table class="table table-bordered table-sm align-middle mb-4">
+    <thead class="table-light">
+        <tr>
+            <th>Indicador</th>
+            <th class="text-end">Resultado</th>
+            <th class="text-end">Meta</th>
+            <th class="text-end">Tolerancia</th>
+            <th class="text-center">Semáforo</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var k in Model.Kpis)
+        {
+            <tr>
+                <td class="fw-semibold">@k.Nombre</td>
+                <td class="text-end fw-bold">@(k.Valor.HasValue ? $"{k.Valor.Value:N1} {k.Unidad}" : "Sin datos")</td>
+                <td class="text-end">@(k.MayorEsMejor ? "≥" : "≤") @k.Meta.ToString("N1") @k.Unidad</td>
+                <td class="text-end">± @k.Tolerancia.ToString("N1")</td>
+                <td class="text-center">
+                    <span class="badge @(k.Semaforo == "Verde" ? "bg-success" : k.Semaforo == "Amarillo" ? "bg-warning text-dark" : k.Semaforo == "Rojo" ? "bg-danger" : "bg-secondary")">
+                        @(k.Semaforo == "SinDatos" ? "Sin datos" : k.Semaforo)
+                    </span>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (Model.Pareto.Any())
+{
+    <h6 class="fw-bold text-secondary text-uppercase small">2. Pareto de Mermas (Últimos @Model.Dias días)</h6>
+    <table class="table table-bordered table-sm align-middle mb-4">
+        <thead class="table-light">
+            <tr>
+                <th>Artículo</th>
+                <th class="text-end">Merma (Unidades)</th>
+                <th class="text-end">% Acumulado</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in Model.Pareto)
+            {
+                <tr>
+                    <td>@p.Articulo</td>
+                    <td class="text-end">@p.Total.ToString("N2")</td>
+                    <td class="text-end fw-semibold">@p.AcumuladoPct.ToString("N1")%</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<h6 class="fw-bold text-secondary text-uppercase small">3. Planes de Acción Correctivos y Preventivos</h6>
+<table class="table table-bordered table-sm align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>Indicador</th>
+            <th>Análisis de Causa Raíz / Acción</th>
+            <th>Responsable</th>
+            <th class="text-center">Estado</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.PlanesAccion.Any())
+        {
+            <tr><td colspan="4" class="text-center text-muted py-2">No existen planes de acción registrados.</td></tr>
+        }
+        @foreach (var p in Model.PlanesAccion)
+        {
+            <tr>
+                <td class="fw-semibold">@p.Indicador</td>
+                <td>@p.AnalisisCausaRaiz</td>
+                <td>@p.Responsable</td>
+                <td class="text-center">@p.Estado</td>
+            </tr>
+        }
+    </tbody>
+</table>
+

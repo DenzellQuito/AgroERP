@@ -34,8 +34,14 @@ public class ActivosController : Controller
             .Select(z => new { z.Id, Nombre = z.Almacen.Nombre + " - " + z.CodigoUbicacion })
             .ToListAsync();
 
+        var usuarios = await db.Users
+            .OrderBy(u => u.Id)
+            .Select(u => new { u.Id, Nombre = u.UserName + " (" + u.Id + ")" })
+            .ToListAsync();
+
         ctrl.ViewBag.Proveedores = new SelectList(proveedores, "Id", "RazonSocial", vm?.ProveedorId);
         ctrl.ViewBag.Zonas = new SelectList(zonas, "Id", "Nombre", vm?.ZonaUbicacionId);
+        ctrl.ViewBag.Usuarios = new SelectList(usuarios, "Id", "Nombre", vm?.UsuarioResponsableId);
     }
 
     public async Task<IActionResult> Index()
@@ -59,8 +65,10 @@ public class ActivosController : Controller
     // GET: Mostrar formulario con desplegables reales
     public async Task<IActionResult> Create([FromServices] ApplicationDbContext db)
     {
-        await CargarCombosAsync(this, db);
-        return View(new CrearActivoVM { UsuarioResponsableId = "USR-004" });
+        var usuarioId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "USR-001";
+        var vm = new CrearActivoVM { UsuarioResponsableId = usuarioId };
+        await CargarCombosAsync(this, db, vm);
+        return View(vm);
     }
 
     // POST: Recibir los datos y guardarlos
@@ -144,5 +152,13 @@ public class ActivosController : Controller
         }
 
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> FichaPdf(int id)
+    {
+        var vm = await _da.ObtenerFichaCompletaAsync(id);
+        if (vm == null) return NotFound();
+        return View(vm);
     }
 }

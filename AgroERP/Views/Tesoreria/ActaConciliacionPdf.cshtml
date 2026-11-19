@@ -1,0 +1,105 @@
+@model AgroERP.ViewModels.Tesoreria.ActaConciliacionPdfVM
+@{
+    Layout = "~/Views/Shared/_LayoutDocumentoPdf.cshtml";
+    ViewData["Title"] = "Acta de Conciliación Bancaria";
+    ViewData["CodigoDocumento"] = $"CONC-{Model.ConciliacionId:D4}";
+    ViewData["SubtituloDocumento"] = $"Corte al {Model.FechaCorte:dd/MM/yyyy} · Estado: {Model.Estado}";
+    var diferencia = Model.SaldoBancoConciliado - Model.SaldoContableAjustado;
+}
+
+<div class="row mb-4">
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Cuenta Bancaria</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>Entidad:</strong> @Model.Banco</div>
+            <div><strong>N° Cuenta / CCI:</strong> <span class="font-monospace">@Model.NumeroCuenta</span> (@Model.Moneda)</div>
+            <div><strong>Titular:</strong> @Model.Titular</div>
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Datos del Cierre</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>Fecha de Corte:</strong> @Model.FechaCorte.ToString("dd/MM/yyyy")</div>
+            <div><strong>Estado:</strong> <span class="badge bg-success">@Model.Estado</span></div>
+            <div><strong>Responsable:</strong> @Model.Responsable</div>
+        </div>
+    </div>
+</div>
+
+<h6 class="fw-bold text-secondary text-uppercase small">1. Cuadre de Saldos (Extracto Bancario vs. Libros ERP)</h6>
+<table class="table table-bordered align-middle mb-4">
+    <thead class="table-light">
+        <tr>
+            <th>Concepto</th>
+            <th class="text-end" style="width: 28%;">Importe (S/)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Saldo según Extracto Bancario al corte</td>
+            <td class="text-end">S/ @Model.SaldoExtractoBanco.ToString("N2")</td>
+        </tr>
+        <tr>
+            <td>(+) Depósitos en Tránsito</td>
+            <td class="text-end text-success">+ S/ @Model.DepositosEnTransito.ToString("N2")</td>
+        </tr>
+        <tr>
+            <td>(-) Pagos / Cheques Pendientes de Cobro</td>
+            <td class="text-end text-danger">- S/ @Model.PagosPendientes.ToString("N2")</td>
+        </tr>
+        <tr class="table-light fw-bold">
+            <td>(=) Saldo Bancario Conciliado</td>
+            <td class="text-end text-primary">S/ @Model.SaldoBancoConciliado.ToString("N2")</td>
+        </tr>
+        <tr>
+            <td>(-) Comisiones y Gastos Bancarios contabilizados (<code>6391</code> vs <code>1041</code>)</td>
+            <td class="text-end text-danger">S/ @Model.ComisionesBancarias.ToString("N2")</td>
+        </tr>
+        <tr class="table-success fw-bold">
+            <td>(=) Saldo Contable Ajustado en Libros ERP</td>
+            <td class="text-end">S/ @Model.SaldoContableAjustado.ToString("N2")</td>
+        </tr>
+        <tr class="fw-bold">
+            <td>Diferencia por Conciliar</td>
+            <td class="text-end @(diferencia == 0 ? "text-success" : "text-danger")">S/ @diferencia.ToString("N2")</td>
+        </tr>
+    </tbody>
+</table>
+
+@if (Model.MovimientosConciliados.Any())
+{
+    <h6 class="fw-bold text-secondary text-uppercase small">2. Movimientos Emparejados en el Corte</h6>
+    <table class="table table-bordered table-sm align-middle mb-4">
+        <thead class="table-light">
+            <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>N° Operación</th>
+                <th>Referencia</th>
+                <th class="text-end">Monto</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var m in Model.MovimientosConciliados)
+            {
+                <tr>
+                    <td>@m.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@m.TipoMovimiento</td>
+                    <td class="font-monospace">@m.NumeroOperacion</td>
+                    <td>@m.MedioPago · @m.ReferenciaDocumento</td>
+                    <td class="text-end fw-semibold">@(m.TipoMovimiento == "Ingreso" ? "+" : "-") S/ @m.Monto.ToString("N2")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<div class="row mt-5 pt-4 text-center">
+    <div class="col-6">
+        <div class="border-top mx-4 pt-2 small text-muted">Tesorería (@Model.Responsable)</div>
+    </div>
+    <div class="col-6">
+        <div class="border-top mx-4 pt-2 small text-muted">V°B° Contabilidad / Gerencia</div>
+    </div>
+</div>
+

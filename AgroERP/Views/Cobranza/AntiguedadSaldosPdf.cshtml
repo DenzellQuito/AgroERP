@@ -1,0 +1,75 @@
+@model AgroERP.ViewModels.Cobranzas.AntiguedadSaldosPdfVM
+@{
+    Layout = "~/Views/Shared/_LayoutDocumentoPdf.cshtml";
+    ViewData["Title"] = "Antigüedad de Saldos por Cobrar";
+    ViewData["CodigoDocumento"] = $"CXC-{Model.FechaCorte:yyyyMMdd}";
+    ViewData["SubtituloDocumento"] = $"Corte al {Model.FechaCorte:dd/MM/yyyy HH:mm}";
+}
+
+<div class="row g-3 mb-4 text-center">
+    <div class="col-3">
+        <div class="border rounded p-2 bg-light">
+            <div class="small text-muted">Vigente</div>
+            <div class="fw-bold text-success fs-6">S/ @Model.TotalVigente.ToString("N2")</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="border rounded p-2 bg-light">
+            <div class="small text-muted">Vencido 1-30 d.</div>
+            <div class="fw-bold text-warning fs-6">S/ @Model.TotalVencido1a30.ToString("N2")</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="border rounded p-2 bg-light">
+            <div class="small text-muted">Vencido &gt;30 d.</div>
+            <div class="fw-bold text-danger fs-6">S/ @Model.TotalVencidoMas30.ToString("N2")</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="border rounded p-2 bg-dark text-white">
+            <div class="small opacity-75">Cartera Total</div>
+            <div class="fw-bold fs-6">S/ @Model.TotalCarteraPendiente.ToString("N2")</div>
+        </div>
+    </div>
+</div>
+
+<table class="table table-bordered table-sm align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>Factura</th>
+            <th>Cliente</th>
+            <th>RUC / DNI</th>
+            <th>Emisión</th>
+            <th>Vencimiento</th>
+            <th class="text-center">Atraso</th>
+            <th class="text-end">Total</th>
+            <th class="text-end">Saldo Pend.</th>
+            <th>Tramo</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Items.Any())
+        {
+            <tr><td colspan="9" class="text-center text-muted py-3">No existen cuentas por cobrar pendientes al corte.</td></tr>
+        }
+        @foreach (var item in Model.Items)
+        {
+            <tr>
+                <td class="font-monospace">F001-@item.ComprobantePagoId.ToString("D6")</td>
+                <td class="fw-semibold">@item.Cliente</td>
+                <td class="font-monospace">@item.ClienteRuc</td>
+                <td>@item.FechaEmision.ToString("dd/MM/yyyy")</td>
+                <td>@item.FechaVencimiento.ToString("dd/MM/yyyy")</td>
+                <td class="text-center">@item.DiasAtraso d.</td>
+                <td class="text-end">S/ @item.MontoTotal.ToString("N2")</td>
+                <td class="text-end fw-bold">S/ @item.SaldoPendiente.ToString("N2")</td>
+                <td>
+                    <span class="badge @(item.Tramo == "Vigente" ? "bg-success" : item.Tramo == "Vencido 1-30 días" ? "bg-warning text-dark" : "bg-danger")">
+                        @item.Tramo
+                    </span>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+

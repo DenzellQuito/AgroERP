@@ -63,12 +63,8 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-bold">Usuario Custodio</label>
-                        <select asp-for="UsuarioResponsableId" class="form-select" required>
-                            <option value="USR-001">USR-001 (Quito)</option>
-                            <option value="USR-002">USR-002 (Changa)</option>
-                            <option value="USR-003">USR-003 (Lavado)</option>
-                            <option value="USR-004">USR-004 (Méndez)</option>
-                            <option value="USR-005">USR-005 (Díaz)</option>
+                        <select asp-for="UsuarioResponsableId" asp-items="ViewBag.Usuarios" class="form-select" required>
+                            <option value="">-- Seleccione Custodio --</option>
                         </select>
                         <span asp-validation-for="UsuarioResponsableId" class="text-danger"></span>
                     </div>

@@ -39,10 +39,31 @@ public class PagosController : Controller
     public async Task<IActionResult> Index()
     {
         var modelo = await _da.ObtenerBandejaPagosAsync();
+        ViewBag.OrdenesPendientes = await _da.ObtenerOrdenesPendientesFacturarAsync();
+        ViewBag.PagosEjecutados = await _da.ObtenerPagosEjecutadosAsync();
         return View(modelo);
     }
 
-    // GET: /Pagos/Programar/5
+    // POST: /Pagos/RegistrarFacturaOC
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RegistrarFacturaOC(int ordenCompraId, string numeroFactura, string prioridad = "Media", int diasVencimiento = 30)
+    {
+        try
+        {
+            await _da.RegistrarFacturaOrdenCompraAsync(ordenCompraId, numeroFactura, prioridad, diasVencimiento);
+            TempData["Ok"] = $"Factura {numeroFactura} vinculada a OC-{ordenCompraId:D4} y registrada en Cuentas por Pagar.";
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
+        return RedirectToAction(nameof(Index));
+    }
+
+    // POST: /Pagos/Programar/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Programar(int id)
     {
         try
@@ -57,7 +78,9 @@ public class PagosController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // GET: /Pagos/Autorizar/5
+    // POST: /Pagos/Autorizar/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Autorizar(int id)
     {
         try
@@ -149,5 +172,36 @@ public class PagosController : Controller
             modelo.NumeroFactura = cuenta.NumeroFacturaProveedor;
             modelo.SaldoPendiente = cuenta.SaldoPendiente;
         }
+    }
+
+    // GET: /Pagos/VoucherPagoPdf/5
+    [HttpGet]
+    public async Task<IActionResult> VoucherPagoPdf(int id)
+    {
+        var vm = await _da.ObtenerVoucherPagoAsync(id);
+        if (vm == null) return NotFound();
+        return View(vm);
+    }
+
+    // GET: /Pagos/PropuestaPagosPdf
+    [HttpGet]
+    public async Task<IActionResult> PropuestaPagosPdf([FromServices] ApplicationDbContext db)
+    {
+        var bandeja = await _da.ObtenerBandejaPagosAsync();
+        var disponible = await db.Set<CuentaBancaria>()
+            .Where(b => b.Activa)
+            .SumAsync(b => (decimal?)b.SaldoDisponible) ?? 0m;
+
+        var vm = new PropuestaPagosPdfVM
+        {
+            FechaEmision = DateTime.Now,
+            TotalPendiente = bandeja.Sum(x => x.SaldoPendiente),
+            TotalProgramado = bandeja.Where(x => x.Estado == "Programado").Sum(x => x.SaldoPendiente),
+            TotalAutorizado = bandeja.Where(x => x.Estado == "Autorizado" || x.Estado == "PagadoParcial").Sum(x => x.SaldoPendiente),
+            SaldoDisponibleBancos = disponible,
+            Obligaciones = bandeja
+        };
+
+        return View(vm);
     }
 }

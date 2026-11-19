@@ -1,0 +1,119 @@
+@model AgroERP.ViewModels.Activos.FichaActivoPdfVM
+@{
+    Layout = "~/Views/Shared/_LayoutDocumentoPdf.cshtml";
+    ViewData["Title"] = "Ficha Patrimonial y Cuadro de Depreciación";
+    ViewData["CodigoDocumento"] = Model.Codigo;
+    ViewData["SubtituloDocumento"] = $"{Model.Nombre} · Estado: {Model.Estado}";
+}
+
+<div class="row mb-4">
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Identificación y Control</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>Código:</strong> <span class="font-monospace fw-bold">@Model.Codigo</span></div>
+            <div><strong>Bien:</strong> @Model.Nombre</div>
+            <div><strong>Categoría:</strong> @Model.Categoria</div>
+            <div><strong>Marca / Serie:</strong> @Model.MarcaSerie</div>
+            <div><strong>Proveedor:</strong> @Model.Proveedor</div>
+            <div><strong>Ubicación Actual:</strong> @Model.UbicacionActual</div>
+            <div><strong>Custodio Responsable:</strong> @Model.CustodioActual</div>
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Resumen Financiero y Contable (NIC 16)</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>Fecha Adquisición:</strong> @Model.FechaAdquisicion.ToString("dd/MM/yyyy")</div>
+            <div><strong>Vida Útil:</strong> @Model.VidaUtilMeses meses</div>
+            <div><strong>Costo Adquisición (3331):</strong> S/ @Model.CostoAdquisicion.ToString("N2")</div>
+            <div><strong>Valor Residual:</strong> S/ @Model.ValorResidual.ToString("N2")</div>
+            <div><strong>Depreciación Acumulada (3913):</strong> <span class="text-danger fw-semibold">S/ @Model.DepreciacionAcumulada.ToString("N2")</span></div>
+            <div><strong>Valor Neto en Libros (VNL):</strong> <span class="text-primary fw-bold fs-6">S/ @Model.ValorNetoLibros.ToString("N2")</span></div>
+        </div>
+    </div>
+</div>
+
+<h6 class="fw-bold text-secondary text-uppercase small">1. Cuadro de Depreciación Mensual (Línea Recta)</h6>
+<table class="table table-bordered table-sm align-middle mb-4">
+    <thead class="table-light">
+        <tr>
+            <th>Período</th>
+            <th>Fecha Registro</th>
+            <th class="text-end">Cuota Depreciada</th>
+            <th class="text-end">Dep. Acumulada</th>
+            <th class="text-end">Valor Neto Resultante</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Depreciaciones.Any())
+        {
+            <tr><td colspan="5" class="text-center text-muted py-2">Sin depreciaciones registradas aún.</td></tr>
+        }
+        @foreach (var d in Model.Depreciaciones)
+        {
+            <tr>
+                <td class="font-monospace">@d.Mes.ToString("D2")-@d.Anio</td>
+                <td>@d.FechaRegistro.ToString("dd/MM/yyyy")</td>
+                <td class="text-end">S/ @d.MontoDepreciado.ToString("N2")</td>
+                <td class="text-end text-danger">S/ @d.DepreciacionAcumuladaAlCierre.ToString("N2")</td>
+                <td class="text-end fw-bold">S/ @d.ValorNetoResultante.ToString("N2")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h6 class="fw-bold text-secondary text-uppercase small">2. Historial de Traslados y Custodios</h6>
+<table class="table table-bordered table-sm align-middle mb-4">
+    <thead class="table-light">
+        <tr>
+            <th>Fecha</th>
+            <th>Origen &rarr; Destino</th>
+            <th>Custodio Anterior &rarr; Nuevo</th>
+            <th>Motivo</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Transferencias.Any())
+        {
+            <tr><td colspan="4" class="text-center text-muted py-2">Sin traslados registrados.</td></tr>
+        }
+        @foreach (var t in Model.Transferencias)
+        {
+            <tr>
+                <td>@t.Fecha.ToString("dd/MM/yyyy")</td>
+                <td>@t.Origen &rarr; @t.Destino</td>
+                <td>@t.ResponsableAnterior &rarr; @t.ResponsableNuevo</td>
+                <td>@t.Motivo</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h6 class="fw-bold text-secondary text-uppercase small">3. Historial de Mantenimientos y Mejoras Capitalizables</h6>
+<table class="table table-bordered table-sm align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Proveedor</th>
+            <th>Descripción</th>
+            <th class="text-end">Costo</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Mantenimientos.Any())
+        {
+            <tr><td colspan="5" class="text-center text-muted py-2">Sin mantenimientos ni mejoras registradas.</td></tr>
+        }
+        @foreach (var m in Model.Mantenimientos)
+        {
+            <tr>
+                <td>@m.Fecha.ToString("dd/MM/yyyy")</td>
+                <td>@m.Tipo</td>
+                <td>@m.Proveedor</td>
+                <td>@m.Descripcion</td>
+                <td class="text-end fw-semibold">S/ @m.Costo.ToString("N2")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+

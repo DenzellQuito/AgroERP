@@ -107,7 +107,7 @@ public class DATesoreria
         var saldoFinalDisponible = cuentas.Where(c => c.Activa).Sum(c => c.SaldoDisponible);
         var saldoFinalContable = cuentas.Where(c => c.Activa).Sum(c => c.SaldoContable);
 
-        // Fórmula PDF Slide 20: Saldo Inicial + Cobros - Pagos = Saldo Final
+        // Fórmula: Saldo Inicial + Cobros - Pagos = Saldo Final
         var saldoInicialCaja = saldoFinalContable - cobrosMes + pagosMes;
 
         // Proyección de liquidez leyendo CxC (Díaz) y CxP (Changa)
@@ -171,7 +171,7 @@ public class DATesoreria
     }
 
     // ===================== MAESTRO DE CUENTAS BANCARIAS =====================
-    public async Task<string?> CrearCuentaBancariaAsync(CrearCuentaBancariaVM vm)
+    public async Task<string?> CrearCuentaBancariaAsync(CrearCuentaBancariaVM vm, string usuarioId = "USR-001")
     {
         var nro = vm.NumeroCuenta.Trim();
         if (await _db.CuentasBancarias.AnyAsync(c => c.NumeroCuenta == nro))
@@ -202,6 +202,16 @@ public class DATesoreria
                 ReferenciaDocumento = "SALDO-INICIAL",
                 Conciliado = true
             });
+
+            var userContable = string.IsNullOrWhiteSpace(usuarioId) ? "USR-001" : usuarioId;
+            await _contabilidad.RegistrarAsiento(
+                "Tesoreria",
+                null,
+                $"Apertura de cuenta bancaria {cuenta.Banco} ({cuenta.NumeroCuenta})",
+                userContable,
+                (Cuentas.Bancos, saldoInicial, 0m),
+                (Cuentas.FacturasPorCobrar, 0m, saldoInicial)
+            );
         }
 
         _db.CuentasBancarias.Add(cuenta);
@@ -227,18 +237,52 @@ public class DATesoreria
         return null;
     }
 
-    /// Permite registrar un ingreso/egreso directo de tesorería (ej. aporte a caja/bancos) usando el propio contrato.
-    public async Task<string?> RegistrarMovimientoManualAsync(RegistrarMovimientoManualVM vm)
+    /// Permite registrar un ingreso/egreso directo de tesorería (ej. aporte a caja/bancos) usando el propio contrato y contabilizándolo en Libro Diario.
+    public async Task<string?> RegistrarMovimientoManualAsync(RegistrarMovimientoManualVM vm, string usuarioId = "USR-001")
     {
         try
         {
+            var nroOperacion = (vm.NumeroOperacion ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(nroOperacion))
+                return "Debe ingresar el número de operación.";
+
+            if (await _db.MovimientosBancarios.AnyAsync(m => m.NumeroOperacion == nroOperacion))
+                return $"El número de operación '{nroOperacion}' ya fue registrado en el Libro Bancos.";
+
+            var monto = Math.Round(vm.Monto, 2, MidpointRounding.AwayFromZero);
+            var referencia = string.IsNullOrWhiteSpace(vm.ReferenciaDocumento) ? "TESORERIA-DIRECTO" : vm.ReferenciaDocumento.Trim();
+
             await RegistrarMovimientoBancario(
                 vm.CuentaBancariaId,
                 vm.TipoMovimiento,
-                vm.Monto,
+                monto,
                 vm.MedioPago,
-                vm.NumeroOperacion,
-                string.IsNullOrWhiteSpace(vm.ReferenciaDocumento) ? "TESORERIA-DIRECTO" : vm.ReferenciaDocumento.Trim());
+                nroOperacion,
+                referencia);
+
+            var userContable = string.IsNullOrWhiteSpace(usuarioId) ? "USR-001" : usuarioId;
+            if (vm.TipoMovimiento == "Ingreso")
+            {
+                await _contabilidad.RegistrarAsiento(
+                    "Tesoreria",
+                    vm.CuentaBancariaId,
+                    $"Ingreso directo en bancos ({referencia}) Op. {nroOperacion}",
+                    userContable,
+                    (Cuentas.Bancos, monto, 0m),
+                    (Cuentas.FacturasPorCobrar, 0m, monto)
+                );
+            }
+            else
+            {
+                await _contabilidad.RegistrarAsiento(
+                    "Tesoreria",
+                    vm.CuentaBancariaId,
+                    $"Egreso directo en bancos ({referencia}) Op. {nroOperacion}",
+                    userContable,
+                    (Cuentas.GastosBancarios, monto, 0m),
+                    (Cuentas.Bancos, 0m, monto)
+                );
+            }
 
             await _db.SaveChangesAsync();
             return null;
@@ -315,7 +359,7 @@ public class DATesoreria
         return null;
     }
 
-    /// Ejecuta el BPMN de Conciliación Bancaria en 1 solo SaveChangesAsync:
+    /// Ejecuta la Conciliación Bancaria en 1 solo SaveChangesAsync:
     /// 1) Empareja movimientos seleccionados.
     /// 2) Si hay comisiones bancarias (> 0), descuenta saldo, registra el egreso y genera asiento (Debe 6391 / Haber 1041).
     /// 3) Verifica que (Extracto + Depósitos en Tránsito - Pagos Pendientes) == Saldo Contable Ajustado y cierra la conciliación.
@@ -336,7 +380,7 @@ public class DATesoreria
         // Saldo contable del ERP luego de descontar comisiones del extracto
         var saldoContableAjustado = Math.Round(cuenta.SaldoContable - comisiones, 2, MidpointRounding.AwayFromZero);
 
-        // Saldo conciliado según fórmula de Slide 25: Extracto + Depósitos en tránsito - Pagos pendientes
+        // Saldo conciliado: Extracto + Depósitos en tránsito - Pagos pendientes
         var saldoBancoConciliado = Math.Round(extracto + transito - pendientes, 2, MidpointRounding.AwayFromZero);
 
         var diferencia = saldoBancoConciliado - saldoContableAjustado;
@@ -408,5 +452,58 @@ public class DATesoreria
         // Un único SaveChangesAsync para toda la operación (Regla 4 del README)
         await _db.SaveChangesAsync();
         return null;
+    }
+
+    public async Task<ActaConciliacionPdfVM?> ObtenerActaConciliacionAsync(int conciliacionId)
+    {
+        var c = await _db.ConciliacionesBancarias
+            .Include(x => x.CuentaBancaria)
+            .FirstOrDefaultAsync(x => x.Id == conciliacionId);
+        if (c == null) return null;
+
+        var responsable = await _db.Users
+            .Where(u => u.Id == c.UsuarioId)
+            .Select(u => u.UserName)
+            .FirstOrDefaultAsync() ?? c.UsuarioId;
+
+        var movs = await _db.MovimientosBancarios
+            .Where(m => m.CuentaBancariaId == c.CuentaBancariaId && m.Conciliado && m.Fecha.Date <= c.FechaCorte.Date)
+            .OrderByDescending(m => m.Fecha).ThenByDescending(m => m.Id)
+            .Take(30)
+            .Select(m => new MovimientoBancarioItemVM
+            {
+                Id = m.Id,
+                CuentaBanco = c.CuentaBancaria.Banco,
+                Fecha = m.Fecha,
+                TipoMovimiento = m.TipoMovimiento,
+                MedioPago = m.MedioPago,
+                NumeroOperacion = m.NumeroOperacion,
+                Monto = m.Monto,
+                ReferenciaDocumento = m.ReferenciaDocumento,
+                Conciliado = m.Conciliado
+            })
+            .ToListAsync();
+
+        var saldoBancoConciliado = Math.Round(c.SaldoExtractoBanco + c.DepositosEnTransito - c.PagosPendientes, 2, MidpointRounding.AwayFromZero);
+
+        return new ActaConciliacionPdfVM
+        {
+            ConciliacionId = c.Id,
+            CuentaBancariaId = c.CuentaBancariaId,
+            Banco = c.CuentaBancaria.Banco,
+            NumeroCuenta = c.CuentaBancaria.NumeroCuenta,
+            Moneda = c.CuentaBancaria.Moneda,
+            Titular = c.CuentaBancaria.Titular,
+            FechaCorte = c.FechaCorte,
+            SaldoExtractoBanco = c.SaldoExtractoBanco,
+            DepositosEnTransito = c.DepositosEnTransito,
+            PagosPendientes = c.PagosPendientes,
+            SaldoBancoConciliado = saldoBancoConciliado,
+            ComisionesBancarias = c.ComisionesBancarias,
+            SaldoContableAjustado = c.SaldoContableAjustado,
+            Estado = c.Estado,
+            Responsable = responsable,
+            MovimientosConciliados = movs
+        };
     }
 }

@@ -1,0 +1,103 @@
+@model AgroERP.ViewModels.Compras.ActaAdjudicacionPdfVM
+@{
+    Layout = "~/Views/Shared/_LayoutDocumentoPdf.cshtml";
+    ViewData["Title"] = "Acta de Adjudicación y Cuadro Comparativo";
+    ViewData["CodigoDocumento"] = $"REQ-{Model.RequerimientoId:D4}";
+    ViewData["SubtituloDocumento"] = $"Solicitud del {Model.FechaSolicitud:dd/MM/yyyy} · Estado: {Model.Estado}";
+    var ganadora = Model.Ofertas.FirstOrDefault(o => o.EsGanador);
+}
+
+<div class="row mb-4">
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Información del Requerimiento</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>N° Requerimiento:</strong> REQ-@Model.RequerimientoId.ToString("D4")</div>
+            <div><strong>Fecha Solicitud:</strong> @Model.FechaSolicitud.ToString("dd/MM/yyyy HH:mm")</div>
+            <div><strong>Solicitante:</strong> @Model.Solicitante</div>
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Resultado de Adjudicación</h6>
+        <div class="border rounded p-3 bg-light">
+            @if (ganadora != null)
+            {
+                <div><strong>Proveedor Adjudicado:</strong> <span class="text-success fw-bold">@ganadora.Proveedor</span></div>
+                <div><strong>RUC:</strong> @ganadora.Ruc</div>
+                <div><strong>Monto Adjudicado:</strong> S/ @ganadora.Precio.ToString("N2") (Entrega: @ganadora.DiasEntrega días)</div>
+            }
+            else
+            {
+                <div class="text-warning fw-bold">Pendiente de adjudicación</div>
+            }
+        </div>
+    </div>
+</div>
+
+<h6 class="fw-bold text-secondary text-uppercase small">1. Artículos Solicitados</h6>
+<table class="table table-bordered table-sm align-middle mb-4">
+    <thead class="table-light">
+        <tr>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th>Unidad</th>
+            <th class="text-end">Cantidad</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Articulos)
+        {
+            <tr>
+                <td class="font-monospace">@item.Codigo</td>
+                <td>@item.Nombre</td>
+                <td>@item.Unidad</td>
+                <td class="text-end fw-semibold">@item.Cantidad.ToString("N2")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h6 class="fw-bold text-secondary text-uppercase small">2. Cuadro Comparativo de Ofertas</h6>
+<table class="table table-bordered align-middle mb-4">
+    <thead class="table-light">
+        <tr>
+            <th>Proveedor</th>
+            <th>RUC</th>
+            <th class="text-center">Confiabilidad (1-5)</th>
+            <th class="text-center">Plazo Entrega</th>
+            <th class="text-end">Precio Total</th>
+            <th class="text-center">Dictamen</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var o in Model.Ofertas)
+        {
+            <tr class="@(o.EsGanador ? "table-success" : "")">
+                <td class="fw-semibold">@o.Proveedor</td>
+                <td class="font-monospace">@o.Ruc</td>
+                <td class="text-center">@o.Confiabilidad / 5</td>
+                <td class="text-center">@o.DiasEntrega días</td>
+                <td class="text-end fw-bold text-nowrap">S/ @o.Precio.ToString("N2")</td>
+                <td class="text-center">
+                    @if (o.EsGanador)
+                    {
+                        <span class="badge bg-success">ADJUDICADO</span>
+                    }
+                    else
+                    {
+                        <span class="text-muted small">No seleccionado</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div class="row mt-5 pt-4 text-center">
+    <div class="col-6">
+        <div class="border-top mx-4 pt-2 small text-muted">Comité / Área de Compras</div>
+    </div>
+    <div class="col-6">
+        <div class="border-top mx-4 pt-2 small text-muted">V°B° Gerencia Administrativa</div>
+    </div>
+</div>
+

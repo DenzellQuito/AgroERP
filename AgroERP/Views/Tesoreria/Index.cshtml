@@ -20,22 +20,25 @@
 }
 
 <!-- BLOQUE 1: FLUJO DE CAJA DEL PERÍODO Y POSICIÓN DE LIQUIDEZ -->
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <div>
         <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-cash-stack text-success me-2"></i>Flujo de Caja y Posición de Liquidez (PEN)</h5>
         <small class="text-muted">Control de saldos bancarios, recaudación de clientes (CxC) y obligaciones con proveedores (CxP)</small>
     </div>
-    <div class="d-flex gap-2">
-        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalMovimiento">
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-action="FlujoCajaPdf" target="_blank" class="btn btn-danger btn-sm text-nowrap">
+            <i class="bi bi-file-earmark-pdf-fill me-1"></i>Flujo de Caja / Libro Bancos PDF
+        </a>
+        <button class="btn btn-outline-primary btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#modalMovimiento">
             <i class="bi bi-plus-slash-minus me-1"></i>Registrar Ingreso / Egreso Directo
         </button>
-        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevaCuenta">
+        <button class="btn btn-success btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#modalNuevaCuenta">
             <i class="bi bi-bank me-1"></i>+ Nueva Cuenta Bancaria
         </button>
     </div>
 </div>
 
-<!-- Tarjetas de Flujo de Caja (Slide 20: Saldo Inicial + Cobros - Pagos = Saldo Final) -->
+<!-- Tarjetas de Flujo de Caja (Saldo Inicial + Cobros - Pagos = Saldo Final) -->
 <div class="row g-3 mb-4">
     <div class="col-md-3">
         <div class="card border-0 shadow-sm h-100">
@@ -80,11 +83,11 @@
     <div class="card-body py-3">
         <div class="row align-items-center text-center">
             <div class="col-md-4 border-end">
-                <span class="text-muted small d-block">Cuentas por Cobrar Pendientes (Díaz - AR)</span>
+                <span class="text-muted small d-block">Cuentas por Cobrar Pendientes (Cartera Clientes)</span>
                 <span class="fs-5 fw-bold text-success">+ S/ @Model.TotalPorCobrarPendiente.ToString("N2")</span>
             </div>
             <div class="col-md-4 border-end">
-                <span class="text-muted small d-block">Cuentas por Pagar Pendientes (Changa - AP)</span>
+                <span class="text-muted small d-block">Cuentas por Pagar Pendientes (Obligaciones Proveedores)</span>
                 <span class="fs-5 fw-bold text-danger">- S/ @Model.TotalPorPagarPendiente.ToString("N2")</span>
             </div>
             <div class="col-md-4">
@@ -183,7 +186,7 @@
 
 <!-- BLOQUE 3: LIBRO BANCOS (MOVIMIENTOS) Y ÚLTIMAS CONCILIACIONES -->
 <div class="row g-4">
-    <div class="col-lg-7">
+    <div class="col-12">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white py-3">
                 <h6 class="fw-bold mb-0"><i class="bi bi-journal-text me-2 text-info"></i>Libro Bancos · Últimos Movimientos</h6>
@@ -242,7 +245,7 @@
         </div>
     </div>
 
-    <div class="col-lg-5">
+    <div class="col-12">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white py-3">
                 <h6 class="fw-bold mb-0"><i class="bi bi-shield-check me-2 text-success"></i>Conciliaciones Bancarias Cerradas</h6>
@@ -257,24 +260,30 @@
                             <th class="text-end">Comisión</th>
                             <th class="text-end">Saldo Final</th>
                             <th>Estado</th>
+                            <th class="text-end">Documento</th>
                         </tr>
                     </thead>
                     <tbody>
                         @if (!Model.UltimasConciliaciones.Any())
                         {
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-3">Aún no se han ejecutado conciliaciones.</td>
+                                <td colspan="7" class="text-center text-muted py-3">Aún no se han ejecutado conciliaciones.</td>
                             </tr>
                         }
                         @foreach (var con in Model.UltimasConciliaciones)
                         {
                             <tr>
-                                <td class="small">@con.FechaCorte.ToString("dd/MM/yyyy")</td>
+                                <td class="small text-nowrap">@con.FechaCorte.ToString("dd/MM/yyyy")</td>
                                 <td class="small">@con.CuentaBanco</td>
-                                <td class="text-end small">S/ @con.SaldoExtractoBanco.ToString("N2")</td>
-                                <td class="text-end small text-danger">S/ @con.ComisionesBancarias.ToString("N2")</td>
-                                <td class="text-end fw-bold small">S/ @con.SaldoContableAjustado.ToString("N2")</td>
+                                <td class="text-end small text-nowrap">S/ @con.SaldoExtractoBanco.ToString("N2")</td>
+                                <td class="text-end small text-danger text-nowrap">S/ @con.ComisionesBancarias.ToString("N2")</td>
+                                <td class="text-end fw-bold small text-nowrap">S/ @con.SaldoContableAjustado.ToString("N2")</td>
                                 <td><span class="badge bg-success">@con.Estado</span></td>
+                                <td class="text-end text-nowrap">
+                                    <a asp-action="ActaConciliacionPdf" asp-route-id="@con.Id" target="_blank" class="btn btn-sm btn-outline-danger text-nowrap" title="Descargar Acta de Conciliación PDF">
+                                        📄 Acta
+                                    </a>
+                                </td>
                             </tr>
                         }
                     </tbody>

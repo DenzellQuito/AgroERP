@@ -2,6 +2,7 @@
     ViewData["Title"] = "Registrar Cobro";
     Layout = "~/Views/Shared/_LayoutContabilidad.cshtml";
     var cxc = ViewBag.CxC as AgroERP.Models.Tesoreria.CuentaPorCobrar;
+    var notas = ViewBag.NotasCredito as List<AgroERP.Models.Distribucion.NotaCredito> ?? new();
 }
 
 @if (cxc == null)
@@ -32,7 +33,12 @@
             <div class="card-body">
 
                 <div class="alert alert-info">
-                    <h5 class="alert-heading">Resumen de la Deuda</h5>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h5 class="alert-heading mb-0">Resumen de la Deuda</h5>
+                        <a asp-controller="Distribucion" asp-action="FacturaPdf" asp-route-id="@cxc.ComprobantePagoId" target="_blank" class="btn btn-sm btn-outline-danger">
+                            📄 Ver Factura F001-@cxc.ComprobantePagoId.ToString("D6")
+                        </a>
+                    </div>
                     <hr>
                     <p class="mb-1"><strong>Cliente:</strong> @cxc.Cliente.RazonSocial</p>
                     <p class="mb-1"><strong>Total Facturado:</strong> @cxc.MontoTotal.ToString("C")</p>
@@ -79,5 +85,58 @@
 
             </div>
         </div>
+    </div>
+
+    <div class="col-md-6">
+        @if (notas.Any())
+        {
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-warning-subtle fw-bold">Notas de Crédito Aplicadas</div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>N° NC</th><th>Fecha</th><th class="text-end">Monto</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var nc in notas)
+                            {
+                                <tr>
+                                    <td class="font-monospace">NC01-@nc.Id.ToString("D6")</td>
+                                    <td>@nc.Fecha.ToString("dd/MM/yyyy")</td>
+                                    <td class="text-end text-danger fw-bold">- S/ @nc.Monto.ToString("N2")</td>
+                                    <td class="text-end">
+                                        <a asp-controller="Distribucion" asp-action="NotaCreditoPdf" asp-route-id="@nc.Id" target="_blank" class="btn btn-sm btn-outline-secondary">📄 PDF</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        @if (cxc.Cobranzas.Any())
+        {
+            <div class="card shadow-sm">
+                <div class="card-header bg-success-subtle fw-bold">Cobros Registrados Previamente</div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Fecha</th><th>Banco</th><th>Op.</th><th class="text-end">Monto</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var cb in cxc.Cobranzas.OrderByDescending(x => x.FechaCobro))
+                            {
+                                <tr>
+                                    <td>@cb.FechaCobro.ToString("dd/MM/yyyy")</td>
+                                    <td class="small">@cb.CuentaBancaria.Banco</td>
+                                    <td class="font-monospace small">@cb.NumeroOperacion</td>
+                                    <td class="text-end text-success fw-bold">S/ @cb.MontoCobrado.ToString("N2")</td>
+                                    <td class="text-end">
+                                        <a asp-action="ReciboCobranzaPdf" asp-route-id="@cb.Id" target="_blank" class="btn btn-sm btn-outline-success">📄 Recibo</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
     </div>
 </div>

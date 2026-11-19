@@ -27,6 +27,15 @@ public class ParetoItemVM
     public decimal AcumuladoPct { get; set; }
 }
 
+public class PlanAccionItemVM
+{
+    public int Id { get; set; }
+    public string Indicador { get; set; } = "";
+    public string AnalisisCausaRaiz { get; set; } = "";
+    public string Responsable { get; set; } = "";
+    public string Estado { get; set; } = "";
+}
+
 public class DashboardVM
 {
     public int Dias { get; set; } = 90;
@@ -34,6 +43,8 @@ public class DashboardVM
     public List<PuntoMesVM> OtifMensual { get; set; } = new();
     public List<PuntoMesVM> CostoMensual { get; set; } = new();
     public List<ParetoItemVM> Pareto { get; set; } = new();
+    public List<PlanAccionItemVM> PlanesAccion { get; set; } = new();
+    public List<IndicadorVM> IndicadoresDisponibles { get; set; } = new();
 }
 
 public class IndicadorVM

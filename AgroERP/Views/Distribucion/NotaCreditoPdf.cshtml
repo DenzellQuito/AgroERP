@@ -1,0 +1,54 @@
+@model AgroERP.ViewModels.Distribucion.NotaCreditoPdfVM
+@{
+    Layout = "~/Views/Shared/_LayoutDocumentoPdf.cshtml";
+    ViewData["Title"] = "Nota de Crédito Electrónica";
+    ViewData["CodigoDocumento"] = $"NC01-{Model.NotaCreditoId:D6}";
+    ViewData["SubtituloDocumento"] = $"Emitida el {Model.FechaEmision:dd/MM/yyyy}";
+}
+
+<div class="row mb-4">
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Cliente</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>Razón Social:</strong> @Model.Cliente</div>
+            <div><strong>RUC / DNI:</strong> @Model.ClienteRuc</div>
+            <div><strong>Pedido Origen:</strong> PED-@Model.PedidoVentaId.ToString("D4")</div>
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Documento que Modifica</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>Comprobante Origen:</strong> F001-@Model.ComprobantePagoId.ToString("D6")</div>
+            <div><strong>Motivo:</strong> Devolución de mercadería — @Model.Motivo</div>
+            <div><strong>Fecha Emisión:</strong> @Model.FechaEmision.ToString("dd/MM/yyyy HH:mm")</div>
+        </div>
+    </div>
+</div>
+
+<table class="table table-bordered align-middle mb-4">
+    <thead class="table-light">
+        <tr>
+            <th>Artículo Devuelto</th>
+            <th>Lote</th>
+            <th class="text-end">Cantidad Rechazada</th>
+            <th class="text-end">Valor Venta</th>
+            <th class="text-end">IGV (18%)</th>
+            <th class="text-end">Total Acreditado</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="fw-semibold">@Model.Articulo</td>
+            <td class="font-monospace">@Model.NumeroLote</td>
+            <td class="text-end">@Model.CantidadDevuelta.ToString("N2")</td>
+            <td class="text-end">S/ @Model.SubtotalNeto.ToString("N2")</td>
+            <td class="text-end">S/ @Model.Igv.ToString("N2")</td>
+            <td class="text-end fw-bold text-danger">S/ @Model.MontoTotal.ToString("N2")</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="alert alert-light border small">
+    Esta Nota de Crédito descuenta automáticamente <strong>S/ @Model.MontoTotal.ToString("N2")</strong> del saldo pendiente de la Cuenta por Cobrar vinculada al comprobante <strong>F001-@Model.ComprobantePagoId.ToString("D6")</strong>.
+</div>
+

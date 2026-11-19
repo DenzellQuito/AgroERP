@@ -1,0 +1,69 @@
+@model AgroERP.ViewModels.Pagos.PropuestaPagosPdfVM
+@{
+    Layout = "~/Views/Shared/_LayoutDocumentoPdf.cshtml";
+    ViewData["Title"] = "Propuesta de Programación de Pagos";
+    ViewData["CodigoDocumento"] = $"CXP-{Model.FechaEmision:yyyyMMdd}";
+    ViewData["SubtituloDocumento"] = $"Ordenada por vencimiento y prioridad · {Model.FechaEmision:dd/MM/yyyy HH:mm}";
+}
+
+<div class="row g-3 mb-4 text-center">
+    <div class="col-3">
+        <div class="border rounded p-2 bg-light">
+            <div class="small text-muted">Total Pendiente</div>
+            <div class="fw-bold text-danger fs-6 text-nowrap">S/ @Model.TotalPendiente.ToString("N2")</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="border rounded p-2 bg-light">
+            <div class="small text-muted">Programado</div>
+            <div class="fw-bold text-info fs-6 text-nowrap">S/ @Model.TotalProgramado.ToString("N2")</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="border rounded p-2 bg-light">
+            <div class="small text-muted">Autorizado</div>
+            <div class="fw-bold text-primary fs-6 text-nowrap">S/ @Model.TotalAutorizado.ToString("N2")</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="border rounded p-2 bg-dark text-white">
+            <div class="small opacity-75">Saldo en Bancos</div>
+            <div class="fw-bold text-info fs-6 text-nowrap">S/ @Model.SaldoDisponibleBancos.ToString("N2")</div>
+        </div>
+    </div>
+</div>
+
+<table class="table table-bordered table-sm align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>Proveedor</th>
+            <th>Tipo</th>
+            <th>Factura</th>
+            <th>Vencimiento</th>
+            <th>Prioridad</th>
+            <th class="text-end">Total</th>
+            <th class="text-end">Saldo Pend.</th>
+            <th>Estado</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Obligaciones.Any())
+        {
+            <tr><td colspan="8" class="text-center text-muted py-3">No existen cuentas por pagar pendientes.</td></tr>
+        }
+        @foreach (var item in Model.Obligaciones)
+        {
+            <tr>
+                <td class="fw-semibold">@item.Proveedor</td>
+                <td>@item.TipoObligacion</td>
+                <td class="font-monospace">@item.NumeroFactura</td>
+                <td class="text-nowrap">@item.FechaVencimiento.ToString("dd/MM/yyyy")</td>
+                <td>@item.Prioridad</td>
+                <td class="text-end text-nowrap">S/ @item.MontoTotal.ToString("N2")</td>
+                <td class="text-end fw-bold text-nowrap">S/ @item.SaldoPendiente.ToString("N2")</td>
+                <td>@item.Estado</td>
+            </tr>
+        }
+    </tbody>
+</table>
+

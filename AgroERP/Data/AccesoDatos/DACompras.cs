@@ -13,11 +13,13 @@ public class DACompras
 {
     private readonly ApplicationDbContext _db;
     private readonly DAContabilidad _contabilidad;
+    private readonly DAPagos _pagos;
 
-    public DACompras(ApplicationDbContext db, DAContabilidad contabilidad)
+    public DACompras(ApplicationDbContext db, DAContabilidad contabilidad, DAPagos pagos)
     {
         _db = db;
         _contabilidad = contabilidad;
+        _pagos = pagos;
     }
 
     // ===================== CONTRATOS (los llaman otros módulos) =====================
@@ -72,12 +74,27 @@ public class DACompras
     public async Task MarcarOrdenRecepcionada(int ordenCompraId, bool parcial)
     {
         // Buscar la orden de compra que indica Lavado
-        var orden = await _db.Set<OrdenCompra>().FindAsync(ordenCompraId);
+        var orden = await _db.Set<OrdenCompra>()
+            .Include(o => o.Detalles)
+            .FirstOrDefaultAsync(o => o.Id == ordenCompraId);
 
         if (orden != null)
         {
             // Cambiar el estado en texto exacto (Regla 8)
             orden.Estado = parcial ? "RecepcionadaParcial" : "Cerrada";
+
+            if (!parcial)
+            {
+                var articuloIds = orden.Detalles.Select(d => d.ArticuloId).Distinct().ToList();
+                var necesidades = await _db.Set<NecesidadMrp>()
+                    .Where(n => n.Estado == "ConRequerimiento" && articuloIds.Contains(n.ArticuloId))
+                    .ToListAsync();
+
+                foreach (var n in necesidades)
+                {
+                    n.Estado = "Atendida";
+                }
+            }
         }
     }
 
@@ -133,6 +150,42 @@ public class DACompras
         }
     }
 
+    public async Task AprobarRequerimientoAsync(int requerimientoId)
+    {
+        var requerimiento = await _db.Set<RequerimientoCompra>().FindAsync(requerimientoId)
+            ?? throw new InvalidOperationException("Requerimiento no encontrado.");
+
+        if (requerimiento.Estado != "PendienteAprobacion")
+            throw new InvalidOperationException("Solo se pueden aprobar requerimientos en estado PendienteAprobacion.");
+
+        requerimiento.Estado = "Aprobado";
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task RechazarRequerimientoAsync(int requerimientoId)
+    {
+        var requerimiento = await _db.Set<RequerimientoCompra>().FindAsync(requerimientoId)
+            ?? throw new InvalidOperationException("Requerimiento no encontrado.");
+
+        if (requerimiento.Estado != "PendienteAprobacion")
+            throw new InvalidOperationException("Solo se pueden rechazar requerimientos en estado PendienteAprobacion.");
+
+        requerimiento.Estado = "Rechazado";
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task DevolverABorradorAsync(int requerimientoId)
+    {
+        var requerimiento = await _db.Set<RequerimientoCompra>().FindAsync(requerimientoId)
+            ?? throw new InvalidOperationException("Requerimiento no encontrado.");
+
+        if (requerimiento.Estado != "PendienteAprobacion")
+            throw new InvalidOperationException("Solo se pueden devolver a borrador requerimientos en estado PendienteAprobacion.");
+
+        requerimiento.Estado = "Borrador";
+        await _db.SaveChangesAsync();
+    }
+
     // 5. Obtener lista de artículos (Lectura permitida por Regla 1)
     public async Task<List<AgroERP.Models.Maestros.Articulo>> ObtenerArticulosAsync()
     {
@@ -147,6 +200,16 @@ public class DACompras
 
     public async Task<int> CrearProveedorAsync(Proveedor proveedor)
     {
+        var rucLimpio = (proveedor.Ruc ?? string.Empty).Trim();
+        if (string.IsNullOrEmpty(rucLimpio))
+            throw new InvalidOperationException("El RUC del proveedor es obligatorio.");
+
+        if (await _db.Set<Proveedor>().AnyAsync(p => p.Ruc == rucLimpio))
+            throw new InvalidOperationException($"Ya existe un proveedor registrado con el RUC '{rucLimpio}'.");
+
+        proveedor.Ruc = rucLimpio;
+        proveedor.RazonSocial = (proveedor.RazonSocial ?? string.Empty).Trim();
+
         _db.Set<Proveedor>().Add(proveedor);
         await _db.SaveChangesAsync(); // Operación interna de tu módulo (Regla 4)
         return proveedor.Id;
@@ -158,6 +221,14 @@ public class DACompras
         return await _db.Set<AgroERP.Models.Compras.RequerimientoCompra>()
             .Include(r => r.Cotizaciones)
             .ThenInclude(c => c.Proveedor)
+            .FirstOrDefaultAsync(r => r.Id == requerimientoId);
+    }
+
+    public async Task<AgroERP.Models.Compras.RequerimientoCompra?> ObtenerRequerimientoCompletoAsync(int requerimientoId)
+    {
+        return await _db.Set<AgroERP.Models.Compras.RequerimientoCompra>()
+            .Include(r => r.Detalles).ThenInclude(d => d.Articulo)
+            .Include(r => r.Cotizaciones).ThenInclude(c => c.Proveedor)
             .FirstOrDefaultAsync(r => r.Id == requerimientoId);
     }
 
@@ -195,21 +266,35 @@ public class DACompras
         var req = await _db.Set<AgroERP.Models.Compras.RequerimientoCompra>()
             .Include(r => r.Detalles)
             .Include(r => r.Cotizaciones)
-            .FirstOrDefaultAsync(r => r.Id == requerimientoId);
+            .FirstOrDefaultAsync(r => r.Id == requerimientoId)
+            ?? throw new InvalidOperationException("Requerimiento no encontrado.");
 
-        var ganadora = req!.Cotizaciones.FirstOrDefault(c => c.EsGanador);
+        if (req.Estado == "Rechazado")
+            throw new InvalidOperationException("No se puede generar una orden de compra para un requerimiento rechazado.");
+
+        if (!req.Detalles.Any())
+            throw new InvalidOperationException("El requerimiento no tiene artículos solicitados.");
+
+        var cantidadTotal = req.Detalles.Sum(x => x.Cantidad);
+        if (cantidadTotal <= 0)
+            throw new InvalidOperationException("La cantidad total del requerimiento debe ser mayor a cero.");
+
+        var ganadora = req.Cotizaciones.FirstOrDefault(c => c.EsGanador)
+            ?? throw new InvalidOperationException("Debe adjudicar una cotización ganadora antes de generar la orden de compra.");
+
+        var precioProrrateado = Math.Round(ganadora.PrecioOfertado / cantidadTotal, 4, MidpointRounding.AwayFromZero);
 
         var orden = new AgroERP.Models.Compras.OrdenCompra
         {
-            ProveedorId = ganadora!.ProveedorId,
+            ProveedorId = ganadora.ProveedorId,
             FechaEmision = DateTime.Now,
-            Total = ganadora.PrecioOfertado,
+            Total = Math.Round(ganadora.PrecioOfertado, 2, MidpointRounding.AwayFromZero),
             Estado = "Emitida", // Regla 8 de tu equipo: texto exacto
             Detalles = req.Detalles.Select(d => new AgroERP.Models.Compras.OrdenCompraDetalle
             {
                 ArticuloId = d.ArticuloId,
                 CantidadPedida = d.Cantidad,
-                PrecioUnitario = ganadora.PrecioOfertado / req.Detalles.Sum(x => x.Cantidad) // Prorrateo del precio total
+                PrecioUnitario = precioProrrateado
             }).ToList()
         };
 
@@ -240,27 +325,21 @@ public class DACompras
     // ===================== GASTOS LOGÍSTICOS (FLETES) =====================
     public async Task RegistrarFleteContableAsync(int ordenId, decimal costo, string glosa, string usuarioId)
     {
-        var cuentaGasto = await _db.Set<PlanCuenta>().FirstOrDefaultAsync(c => c.Codigo == Cuentas.FletesGasto);
-        if (cuentaGasto == null) throw new InvalidOperationException("La cuenta contable de fletes no está configurada.");
+        var orden = await _db.Set<OrdenCompra>().FindAsync(ordenId)
+            ?? throw new InvalidOperationException("Orden de compra no encontrada.");
 
-        var cuentaPasivo = await _db.Set<PlanCuenta>().FirstOrDefaultAsync(c => c.Codigo == Cuentas.FacturasPorPagar);
-        if (cuentaPasivo == null) throw new InvalidOperationException("La cuenta contable de pasivo no está configurada.");
+        costo = Math.Round(costo, 2, MidpointRounding.AwayFromZero);
+        if (costo <= 0)
+            throw new InvalidOperationException("El costo del flete debe ser mayor a cero.");
 
-        var asiento = new AsientoContable
-        {
-            FechaContable = DateTime.Now,
-            Glosa = glosa,
-            ReferenciaModulo = "Compras",
-            ReferenciaId = ordenId,
-            UsuarioId = usuarioId, // Ahora usa el parámetro dinámico
-            Detalles = new List<AsientoDetalle>
-            {
-                new AsientoDetalle { CuentaId = cuentaGasto.Id, Debe = costo, Haber = 0 },
-                new AsientoDetalle { CuentaId = cuentaPasivo.Id, Debe = 0, Haber = costo }
-            }
-        };
-
-        _db.Set<AsientoContable>().Add(asiento);
+        await _contabilidad.RegistrarAsiento(
+            "Compras",
+            ordenId,
+            string.IsNullOrWhiteSpace(glosa) ? $"Flete OC-{ordenId:D4}" : glosa.Trim(),
+            usuarioId,
+            (Cuentas.FletesGasto, costo, 0m),
+            (Cuentas.FacturasPorPagar, 0m, costo)
+        );
 
         _db.Set<GastoLogistico>().Add(new GastoLogistico
         {
@@ -268,6 +347,8 @@ public class DACompras
             Monto = costo,
             FechaRegistro = DateTime.Now
         });
+
+        await _pagos.CrearCuentaPorPagar(orden.ProveedorId, orden.Id, "Flete", $"FLETE-OC-{orden.Id:D4}", costo, 15);
 
         await _db.SaveChangesAsync();
     }

@@ -6,6 +6,9 @@
 
 <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
     <h2>Bandeja de Cuentas por Cobrar</h2>
+    <a asp-action="AntiguedadSaldosPdf" target="_blank" class="btn btn-danger">
+        <i class="bi bi-file-earmark-pdf-fill me-1"></i>Antigüedad de Saldos PDF
+    </a>
 </div>
 
 @if (TempData["Success"] != null)
@@ -54,12 +57,29 @@
                                 </span>
                             </td>
                             <td>
-                                @if (item.SaldoPendiente > 0)
-                                {
-                                    <a asp-action="RegistrarCobro" asp-route-id="@item.Id" class="btn btn-sm btn-primary">
-                                        <i class="bi bi-cash-coin"></i> Registrar Cobro
+                                <div class="d-flex flex-wrap gap-1">
+                                    @if (item.SaldoPendiente > 0)
+                                    {
+                                        <a asp-action="RegistrarCobro" asp-route-id="@item.Id" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-cash-coin"></i> Cobrar
+                                        </a>
+                                    }
+                                    <a asp-controller="Distribucion" asp-action="FacturaPdf" asp-route-id="@item.ComprobantePagoId" target="_blank" class="btn btn-sm btn-outline-danger" title="Ver Factura PDF">
+                                        📄 Factura
                                     </a>
-                                }
+                                    @if (item.UltimaNotaCreditoId.HasValue)
+                                    {
+                                        <a asp-controller="Distribucion" asp-action="NotaCreditoPdf" asp-route-id="@item.UltimaNotaCreditoId" target="_blank" class="btn btn-sm btn-outline-warning text-dark" title="Ver Nota de Crédito PDF">
+                                            📄 NC
+                                        </a>
+                                    }
+                                    @if (item.UltimaCobranzaId.HasValue)
+                                    {
+                                        <a asp-action="ReciboCobranzaPdf" asp-route-id="@item.UltimaCobranzaId" target="_blank" class="btn btn-sm btn-outline-success" title="Ver último Recibo de Cobranza PDF">
+                                            📄 Recibo
+                                        </a>
+                                    }
+                                </div>
                             </td>
                         </tr>
                     }
