@@ -1,0 +1,61 @@
+@model AgroERP.ViewModels.Cobranzas.ReciboCobranzaPdfVM
+@{
+    Layout = "~/Views/Shared/_LayoutDocumentoPdf.cshtml";
+    ViewData["Title"] = "Recibo de Cobranza a Cliente";
+    ViewData["CodigoDocumento"] = $"COB-{Model.CobranzaId:D6}";
+    ViewData["SubtituloDocumento"] = $"Emitido el {Model.FechaCobro:dd/MM/yyyy HH:mm}";
+}
+
+<div class="row mb-4">
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Cliente Pagador</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>Razón Social:</strong> @Model.Cliente</div>
+            <div><strong>RUC / DNI:</strong> @Model.ClienteRuc</div>
+            <div><strong>Factura Referencia:</strong> F001-@Model.ComprobantePagoId.ToString("D6")</div>
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Detalle de Ingreso Bancario</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>Cuenta Destino:</strong> @Model.CuentaBancaria</div>
+            <div><strong>Medio de Pago:</strong> @Model.MedioPago</div>
+            <div><strong>N° Operación:</strong> <span class="font-monospace fw-bold">@Model.NumeroOperacion</span></div>
+        </div>
+    </div>
+</div>
+
+<table class="table table-bordered align-middle mb-4">
+    <thead class="table-light">
+        <tr>
+            <th>Concepto</th>
+            <th class="text-end">Total Comprobante</th>
+            <th class="text-end">Monto Cobrado</th>
+            <th class="text-end">Saldo Pendiente</th>
+            <th class="text-center">Estado CxC</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Cobranza de Cuenta por Cobrar #CXC-@Model.CuentaPorCobrarId.ToString("D4") (Factura F001-@Model.ComprobantePagoId.ToString("D6"))</td>
+            <td class="text-end">S/ @Model.MontoTotalFactura.ToString("N2")</td>
+            <td class="text-end fw-bold text-success fs-5">S/ @Model.MontoCobrado.ToString("N2")</td>
+            <td class="text-end fw-bold @(Model.SaldoRestante > 0 ? "text-danger" : "text-success")">S/ @Model.SaldoRestante.ToString("N2")</td>
+            <td class="text-center"><span class="badge bg-info text-dark">@Model.EstadoCxC</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="border rounded p-3 bg-light small mb-4">
+    <strong>Asiento Contable Automático Generado:</strong> Debe <code>1041 Bancos</code> / Haber <code>1212 Facturas por cobrar</code> por <strong>S/ @Model.MontoCobrado.ToString("N2")</strong>. Registrado por <strong>@Model.Usuario</strong>.
+</div>
+
+<div class="row mt-5 pt-4 text-center">
+    <div class="col-6">
+        <div class="border-top mx-4 pt-2 small text-muted">Tesorería / Cobranzas (@Model.Usuario)</div>
+    </div>
+    <div class="col-6">
+        <div class="border-top mx-4 pt-2 small text-muted">Conformidad del Cliente</div>
+    </div>
+</div>
+

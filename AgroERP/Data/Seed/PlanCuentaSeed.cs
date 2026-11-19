@@ -1,4 +1,6 @@
-﻿using AgroERP.Models.Contabilidad;
+﻿using AgroERP.Models.Calidad_WMS;
+using AgroERP.Models.Contabilidad;
+using AgroERP.Models.Maestros;
 using Microsoft.EntityFrameworkCore;
 
 namespace AgroERP.Data.Seed;
@@ -44,6 +46,95 @@ public static class PlanCuentaSeed
         if (faltantes.Count > 0)
         {
             db.AddRange(faltantes);
+            await db.SaveChangesAsync();
+        }
+
+        await SembrarFresaInicialAsync(db);
+    }
+
+    private static async Task SembrarFresaInicialAsync(ApplicationDbContext db)
+    {
+        var fresa = await db.Articulos.FirstOrDefaultAsync(a => a.Tipo == "Fresa");
+        if (fresa == null)
+        {
+            fresa = new Articulo
+            {
+                Codigo = "FRE-001",
+                Nombre = "Fresa fresca",
+                Tipo = "Fresa",
+                UnidadMedida = "Jaba"
+            };
+            db.Articulos.Add(fresa);
+            await db.SaveChangesAsync();
+        }
+
+        var almacen = await db.Almacenes.FirstOrDefaultAsync(a => a.Tipo == "AcopioFresa");
+        if (almacen == null)
+        {
+            almacen = new Almacen
+            {
+                Nombre = "Cámara de Acopio de Fresa",
+                Tipo = "AcopioFresa"
+            };
+            db.Almacenes.Add(almacen);
+            await db.SaveChangesAsync();
+        }
+
+        var zona = await db.ZonasUbicacion.FirstOrDefaultAsync(z => z.AlmacenId == almacen.Id);
+        if (zona == null)
+        {
+            zona = new ZonaUbicacion
+            {
+                AlmacenId = almacen.Id,
+                CodigoUbicacion = "ZN-ACOPIO-01"
+            };
+            db.ZonasUbicacion.Add(zona);
+            await db.SaveChangesAsync();
+        }
+
+        if (!await db.InventariosExistencia.AnyAsync(i => i.Lote.Articulo.Tipo == "Fresa"))
+        {
+            var lote = await db.Lotes.FirstOrDefaultAsync(l => l.ArticuloId == fresa.Id && l.NumeroLote == "LOT-FRESA-INI");
+            if (lote == null)
+            {
+                lote = new Lote
+                {
+                    ArticuloId = fresa.Id,
+                    NumeroLote = "LOT-FRESA-INI",
+                    FechaVencimiento = DateTime.Today.AddDays(30),
+                    EstadoCalidad = "Liberado"
+                };
+                db.Lotes.Add(lote);
+                await db.SaveChangesAsync();
+            }
+
+            db.InventariosExistencia.Add(new InventarioExistencia
+            {
+                LoteId = lote.Id,
+                ZonaUbicacionId = zona.Id,
+                CantidadFisica = 500m,
+                CantidadReservada = 0m
+            });
+
+            db.MovimientosKardex.Add(new MovimientoKardex
+            {
+                LoteId = lote.Id,
+                Fecha = DateTime.Now,
+                TipoMovimiento = "Ingreso",
+                Cantidad = 500m,
+                ZonaDestinoId = zona.Id,
+                ReferenciaDocumento = "COSECHA-INICIAL"
+            });
+
+            await db.SaveChangesAsync();
+        }
+
+        if (!await db.Clientes.AnyAsync())
+        {
+            db.Clientes.AddRange(
+                new Cliente { RucDni = "20501234567", RazonSocial = "Supermercados Peruanos S.A.", LimiteCredito = 25000m },
+                new Cliente { RucDni = "20609876543", RazonSocial = "Agroexportadora del Norte S.A.C.", LimiteCredito = 35000m }
+            );
             await db.SaveChangesAsync();
         }
     }

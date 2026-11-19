@@ -1,0 +1,65 @@
+@model AgroERP.ViewModels.Pagos.VoucherPagoPdfVM
+@{
+    Layout = "~/Views/Shared/_LayoutDocumentoPdf.cshtml";
+    ViewData["Title"] = "Comprobante / Voucher de Pago a Proveedor";
+    ViewData["CodigoDocumento"] = $"PAG-{Model.PagoId:D6}";
+    ViewData["SubtituloDocumento"] = $"Ejecutado el {Model.FechaPago:dd/MM/yyyy HH:mm}";
+}
+
+<div class="row mb-4">
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Proveedor Beneficiario</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>Razón Social:</strong> @Model.Proveedor</div>
+            <div><strong>RUC:</strong> @Model.ProveedorRuc</div>
+            <div><strong>Tipo Obligación:</strong> @Model.TipoObligacion</div>
+            <div><strong>Factura N°:</strong> @Model.NumeroFactura</div>
+            @if (Model.OrdenCompraId.HasValue)
+            {
+                <div><strong>Orden de Compra:</strong> OC-@Model.OrdenCompraId.Value.ToString("D4")</div>
+            }
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Detalle de Desembolso Bancario</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>Cuenta Bancaria Origen:</strong> @Model.CuentaBancaria</div>
+            <div><strong>Medio de Pago:</strong> @Model.MedioPago</div>
+            <div><strong>N° Operación:</strong> <span class="font-monospace fw-bold">@Model.NumeroOperacion</span></div>
+            <div><strong>Responsable:</strong> @Model.Usuario</div>
+        </div>
+    </div>
+</div>
+
+<table class="table table-bordered align-middle mb-4">
+    <thead class="table-light">
+        <tr>
+            <th>Obligación</th>
+            <th class="text-end">Total Factura</th>
+            <th class="text-end">Importe Pagado</th>
+            <th class="text-end">Saldo Pendiente</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Cancelación de Cuenta por Pagar #CXP-@Model.CuentaPorPagarId.ToString("D4") (@Model.NumeroFactura)</td>
+            <td class="text-end">S/ @Model.MontoTotalObligacion.ToString("N2")</td>
+            <td class="text-end fw-bold text-primary fs-5">S/ @Model.MontoPagado.ToString("N2")</td>
+            <td class="text-end fw-bold @(Model.SaldoRestante > 0 ? "text-danger" : "text-success")">S/ @Model.SaldoRestante.ToString("N2")</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="border rounded p-3 bg-light small mb-4">
+    <strong>Asiento Contable Automático Generado:</strong> Debe <code>@Model.CuentaContableDebe</code> / Haber <code>1041 Bancos</code> por <strong>S/ @Model.MontoPagado.ToString("N2")</strong>.
+</div>
+
+<div class="row mt-5 pt-4 text-center">
+    <div class="col-6">
+        <div class="border-top mx-4 pt-2 small text-muted">Tesorería / Pagos (@Model.Usuario)</div>
+    </div>
+    <div class="col-6">
+        <div class="border-top mx-4 pt-2 small text-muted">Autorización Gerencia</div>
+    </div>
+</div>
+

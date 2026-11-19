@@ -37,6 +37,7 @@
                 <td>@item.GuiaProveedor</td>
                 <td>
                     <form asp-action="GuardarInspeccion" method="post" class="d-flex gap-2" onsubmit="return validarFormulario(this)">
+                        @Html.AntiForgeryToken()
                         <input type="hidden" name="detalleId" value="@item.DetalleId" />
 
                         <select name="esConforme" class="form-select form-select-sm" style="width: 110px;" onchange="toggleMotivo(this)">
@@ -44,9 +45,9 @@
                             <option value="false">Rechazar</option>
                         </select>
 
-                        <select name="zonaId" class="form-select form-select-sm" style="width: 150px;" required>
+                        <select name="zonaId" class="form-select form-select-sm zona-select" style="width: 150px;" required>
                             <option value="">-- Zona --</option>
-                            @foreach (var zona in ViewBag.Zonas as List<AgroERP.Models.Calidad_WMS.ZonaUbicacion>)
+                            @foreach (var zona in (ViewBag.Zonas as List<AgroERP.Models.Calidad_WMS.ZonaUbicacion>) ?? new())
                             {
                                 <option value="@zona.Id">@zona.CodigoUbicacion</option>
                             }
@@ -66,12 +67,30 @@
         function toggleMotivo(selectElement) {
             var form = selectElement.closest('form');
             var motivoInput = form.querySelector('.motivo-input');
-            if (selectElement.value === "false") { motivoInput.disabled = false; motivoInput.required = true; }
-            else { motivoInput.disabled = true; motivoInput.required = false; motivoInput.value = ""; }
+            var zonaSelect = form.querySelector('.zona-select');
+            if (selectElement.value === "false") {
+                motivoInput.disabled = false;
+                motivoInput.required = true;
+                zonaSelect.disabled = true;
+                zonaSelect.required = false;
+                zonaSelect.value = "";
+            }
+            else {
+                motivoInput.disabled = true;
+                motivoInput.required = false;
+                motivoInput.value = "";
+                zonaSelect.disabled = false;
+                zonaSelect.required = true;
+            }
         }
         function validarFormulario(form) {
             var select = form.querySelector('select[name="esConforme"]');
             var motivo = form.querySelector('.motivo-input');
+            var zonaSelect = form.querySelector('.zona-select');
+            if (select.value === "true" && !zonaSelect.value) {
+                alert("Debe seleccionar una zona para liberar el lote.");
+                return false;
+            }
             if (select.value === "false" && motivo.value.trim() === "") {
                 alert("Debe ingresar un motivo para rechazar el lote.");
                 return false;

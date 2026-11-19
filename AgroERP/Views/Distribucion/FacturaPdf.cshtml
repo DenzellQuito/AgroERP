@@ -1,0 +1,88 @@
+@model AgroERP.ViewModels.Distribucion.FacturaPdfVM
+@{
+    Layout = "~/Views/Shared/_LayoutDocumentoPdf.cshtml";
+    ViewData["Title"] = $"{Model.TipoCPE} Electrónica de Venta";
+    ViewData["CodigoDocumento"] = $"F001-{Model.ComprobanteId:D6}";
+    ViewData["SubtituloDocumento"] = $"Emitida el {Model.FechaEmision:dd/MM/yyyy}";
+}
+
+<div class="row mb-4">
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Cliente Adquirente</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>Razón Social:</strong> @Model.Cliente</div>
+            <div><strong>RUC / DNI:</strong> @Model.ClienteRuc</div>
+            <div><strong>Pedido Referencia:</strong> PED-@Model.PedidoVentaId.ToString("D4")</div>
+            @if (Model.GuiaRemisionId.HasValue)
+            {
+                <div><strong>Guía Remisión:</strong> GRE-@Model.GuiaRemisionId.Value.ToString("D4")</div>
+            }
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Condición de Crédito y Cobranza</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>Fecha Emisión:</strong> @Model.FechaEmision.ToString("dd/MM/yyyy")</div>
+            <div><strong>Fecha Vencimiento:</strong> @(Model.FechaVencimientoCxC?.ToString("dd/MM/yyyy") ?? "-")</div>
+            <div><strong>Estado CxC:</strong> <span class="badge @(Model.EstadoCxC == "Cobrado" ? "bg-success" : "bg-warning text-dark")">@Model.EstadoCxC</span></div>
+            <div><strong>Saldo Pendiente:</strong> <strong class="text-danger">S/ @Model.SaldoPendienteCxC.ToString("N2")</strong></div>
+        </div>
+    </div>
+</div>
+
+<table class="table table-bordered align-middle mb-4">
+    <thead class="table-light">
+        <tr>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th>Unidad</th>
+            <th class="text-end">Cantidad</th>
+            <th class="text-end">P. Unit (inc. IGV)</th>
+            <th class="text-end">Importe</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Items)
+        {
+            <tr>
+                <td class="font-monospace">@item.CodigoArticulo</td>
+                <td>@item.Descripcion</td>
+                <td>@item.Unidad</td>
+                <td class="text-end text-nowrap">@item.Cantidad.ToString("N2")</td>
+                <td class="text-end text-nowrap">S/ @item.PrecioUnitario.ToString("N2")</td>
+                <td class="text-end fw-semibold text-nowrap">S/ @item.Subtotal.ToString("N2")</td>
+            </tr>
+        }
+    </tbody>
+    <tfoot>
+        <tr>
+            <th colspan="5" class="text-end">Op. Gravada (Valor Venta):</th>
+            <th class="text-end text-nowrap">S/ @Model.SubtotalNeto.ToString("N2")</th>
+        </tr>
+        <tr>
+            <th colspan="5" class="text-end">IGV (18%):</th>
+            <th class="text-end text-nowrap">S/ @Model.Igv.ToString("N2")</th>
+        </tr>
+        <tr class="table-light">
+            <th colspan="5" class="text-end fs-5">IMPORTE TOTAL:</th>
+            <th class="text-end fs-5 text-primary text-nowrap">S/ @Model.MontoTotal.ToString("N2")</th>
+        </tr>
+    </tfoot>
+</table>
+
+@if (Model.NotasCredito.Any())
+{
+    <div class="border rounded p-3 bg-light mb-3">
+        <h6 class="fw-bold text-danger small mb-2">Notas de Crédito Aplicadas a este Comprobante</h6>
+        <ul class="mb-0 small">
+            @foreach (var nc in Model.NotasCredito)
+            {
+                <li>
+                    <strong>NC01-@nc.NotaId.ToString("D6")</strong> (@nc.Fecha.ToString("dd/MM/yyyy")) — <strong>S/ @nc.Monto.ToString("N2")</strong>
+                    <a asp-action="NotaCreditoPdf" asp-route-id="@nc.NotaId" class="ms-2 no-print">Ver Nota de Crédito</a>
+                </li>
+            }
+        </ul>
+    </div>
+}
+

@@ -299,4 +299,59 @@ public class DABI
             return new ParetoItemVM { Articulo = x.Articulo, Total = x.Total, AcumuladoPct = suma <= 0 ? 0 : Math.Round(100m * acum / suma, 1) };
         }).ToList();
     }
+
+    // ===================== PLANES DE ACCIÓN Y MEJORA CONTINUA =====================
+    public async Task<List<PlanAccionItemVM>> ListarPlanesAccionAsync()
+    {
+        var usuarios = await _db.Users
+            .Select(u => new { u.Id, u.UserName })
+            .ToDictionaryAsync(u => u.Id, u => u.UserName ?? u.Id);
+
+        var planes = await _db.PlanesAccionMejora
+            .Include(p => p.Indicador)
+            .OrderByDescending(p => p.Id)
+            .ToListAsync();
+
+        return planes.Select(p => new PlanAccionItemVM
+        {
+            Id = p.Id,
+            Indicador = p.Indicador.NombreMetrica,
+            AnalisisCausaRaiz = p.AnalisisCausaRaiz,
+            Responsable = p.ResponsableId != null && usuarios.TryGetValue(p.ResponsableId, out var nombre)
+                ? nombre
+                : (p.ResponsableId ?? "-"),
+            Estado = p.Estado
+        }).ToList();
+    }
+
+    public async Task<string?> CrearPlanAccionAsync(int indicadorId, string analisisCausaRaiz, string responsableId)
+    {
+        if (!await _db.IndicadoresKPI.AnyAsync(i => i.Id == indicadorId))
+            return "El indicador seleccionado no existe.";
+
+        var analisis = (analisisCausaRaiz ?? string.Empty).Trim();
+        if (string.IsNullOrEmpty(analisis))
+            return "Debe describir el análisis de causa raíz y la acción a tomar.";
+
+        _db.PlanesAccionMejora.Add(new PlanAccionMejora
+        {
+            IndicadorId = indicadorId,
+            AnalisisCausaRaiz = analisis,
+            ResponsableId = string.IsNullOrWhiteSpace(responsableId) ? null : responsableId,
+            Estado = "EnProgreso"
+        });
+        await _db.SaveChangesAsync();
+        return null;
+    }
+
+    public async Task<string?> CompletarPlanAccionAsync(int planId)
+    {
+        var plan = await _db.PlanesAccionMejora.FindAsync(planId);
+        if (plan == null) return "Plan de acción no encontrado.";
+        if (plan.Estado == "Completado") return "El plan de acción ya está completado.";
+
+        plan.Estado = "Completado";
+        await _db.SaveChangesAsync();
+        return null;
+    }
 }

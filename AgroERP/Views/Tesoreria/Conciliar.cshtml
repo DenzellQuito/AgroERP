@@ -167,13 +167,14 @@
                                 <th class="text-end">(-) Comisión</th>
                                 <th class="text-end">Saldo Conciliado</th>
                                 <th>Estado</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
                             @if (!Model.HistorialConciliaciones.Any())
                             {
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted py-3">Sin conciliaciones previas.</td>
+                                    <td colspan="8" class="text-center text-muted py-3">Sin conciliaciones previas.</td>
                                 </tr>
                             }
                             @foreach (var h in Model.HistorialConciliaciones)
@@ -186,6 +187,9 @@
                                     <td class="text-end small text-danger">S/ @h.ComisionesBancarias.ToString("N2")</td>
                                     <td class="text-end fw-bold small text-success">S/ @h.SaldoContableAjustado.ToString("N2")</td>
                                     <td><span class="badge bg-success">@h.Estado</span></td>
+                                    <td class="text-end">
+                                        <a asp-action="ActaConciliacionPdf" asp-route-id="@h.Id" target="_blank" class="btn btn-sm btn-outline-danger">📄 Acta PDF</a>
+                                    </td>
                                 </tr>
                             }
                         </tbody>

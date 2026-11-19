@@ -6,6 +6,10 @@
 }
 
 <div class="container mt-4">
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    }
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Cotizaciones para REQ-@Model.RequerimientoId.ToString("D4")</h2>
         <span class="badge bg-warning text-dark fs-6">@Model.Estado</span>
@@ -98,12 +102,16 @@
         </div>
     </div>
 
-    <div class="mt-4 d-flex">
-        <a href="@Url.Action("Details", new { id = Model.RequerimientoId })" class="btn btn-secondary me-2">Volver al Requerimiento</a>
+    <div class="mt-4 d-flex gap-2">
+        <a href="@Url.Action("Details", new { id = Model.RequerimientoId })" class="btn btn-secondary">Volver al Requerimiento</a>
 
         @if (Model.Ofertas.Any(o => o.EsGanador))
         {
-            <form asp-action="GenerarOrden" method="post">
+            <a asp-action="ActaAdjudicacionPdf" asp-route-id="@Model.RequerimientoId" target="_blank" class="btn btn-outline-danger">
+                📄 Acta de Adjudicación PDF
+            </a>
+            <form asp-action="GenerarOrden" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
                 <input type="hidden" name="requerimientoId" value="@Model.RequerimientoId" />
                 <button type="submit" class="btn btn-success">Generar Orden de Compra</button>
             </form>

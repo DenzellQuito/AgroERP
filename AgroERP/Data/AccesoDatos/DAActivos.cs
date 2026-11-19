@@ -1,5 +1,6 @@
 ﻿using AgroERP.Models.ActivosFijos;
 using AgroERP.Models.Contabilidad;
+using AgroERP.ViewModels.Activos;
 using Microsoft.EntityFrameworkCore;
 
 namespace AgroERP.Data.AccesoDatos;
@@ -71,6 +72,9 @@ public class DAActivos
         if (await _db.Set<ActivoFijo>().AnyAsync(a => a.Codigo == nuevoActivo.Codigo))
             throw new Exception($"Ya existe un activo fijo registrado con el código '{nuevoActivo.Codigo}'.");
 
+        nuevoActivo.CostoAdquisicion = Math.Round(nuevoActivo.CostoAdquisicion, 2, MidpointRounding.AwayFromZero);
+        nuevoActivo.ValorResidual = Math.Round(nuevoActivo.ValorResidual, 2, MidpointRounding.AwayFromZero);
+
         if (nuevoActivo.ValorResidual >= nuevoActivo.CostoAdquisicion)
             throw new Exception("El valor residual debe ser menor al costo de adquisición.");
 
@@ -84,7 +88,7 @@ public class DAActivos
         await _db.SaveChangesAsync();
     }
 
-    // Método de la Fase 2 del Bizagi: Capitalización, CxP y Contabilidad
+    // Capitalización, CxP y Contabilidad
     public async Task CapitalizarActivoAsync(int activoId, string nroFactura, string usuarioId)
     {
         var activo = await _db.Set<ActivoFijo>().FindAsync(activoId);
@@ -127,7 +131,7 @@ public class DAActivos
         await _db.SaveChangesAsync();
     }
 
-    // Método de la Fase 3 del Bizagi: Motor de Depreciación Mensual
+    // Motor de Depreciación Mensual
     public async Task DepreciarActivoAsync(int activoId, string usuarioId)
     {
         var activo = await _db.Set<ActivoFijo>().FindAsync(activoId);
@@ -136,6 +140,13 @@ public class DAActivos
 
         if (activo.ValorNetoLibros <= activo.ValorResidual)
             throw new Exception("El activo ya alcanzó su valor residual mínimo. No se puede depreciar más.");
+
+        int anioActual = DateTime.Now.Year;
+        int mesActual = DateTime.Now.Month;
+        bool yaDepreciadoMes = await _db.Set<DepreciacionActivo>()
+            .AnyAsync(d => d.ActivoFijoId == activoId && d.Anio == anioActual && d.Mes == mesActual);
+        if (yaDepreciadoMes)
+            throw new Exception($"El activo '{activo.Codigo}' ya fue depreciado en el período {mesActual:D2}-{anioActual}.");
 
         // 1. Cálculo de depreciación lineal mensual: (Costo - ValorResidual) / VidaUtil
         decimal cuotaMensual = (activo.CostoAdquisicion - activo.ValorResidual) / activo.VidaUtilMeses;
@@ -179,4 +190,76 @@ public class DAActivos
         await _db.SaveChangesAsync();
     }
 
+    public async Task<FichaActivoPdfVM?> ObtenerFichaCompletaAsync(int activoId)
+    {
+        var activo = await _db.Set<ActivoFijo>()
+            .Include(a => a.Proveedor)
+            .Include(a => a.ZonaUbicacion).ThenInclude(z => z.Almacen)
+            .Include(a => a.Depreciaciones)
+            .FirstOrDefaultAsync(a => a.Id == activoId);
+        if (activo == null) return null;
+
+        var usuarios = await _db.Users.ToDictionaryAsync(u => u.Id, u => u.UserName ?? u.Id);
+        string NombreUsr(string? uId) => uId != null && usuarios.TryGetValue(uId, out var n) ? n : (uId ?? "-");
+
+        var transferencias = await _db.TransferenciasActivo
+            .Include(t => t.ZonaOrigen).ThenInclude(z => z.Almacen)
+            .Include(t => t.ZonaDestino).ThenInclude(z => z.Almacen)
+            .Where(t => t.ActivoFijoId == activoId)
+            .OrderByDescending(t => t.FechaTransferencia)
+            .ToListAsync();
+
+        var mantenimientos = await _db.MantenimientosActivo
+            .Include(m => m.Proveedor)
+            .Where(m => m.ActivoFijoId == activoId)
+            .OrderByDescending(m => m.Fecha)
+            .ToListAsync();
+
+        return new FichaActivoPdfVM
+        {
+            Id = activo.Id,
+            Codigo = activo.Codigo,
+            Nombre = activo.Nombre,
+            Categoria = activo.Categoria,
+            MarcaSerie = activo.MarcaSerie,
+            Proveedor = activo.Proveedor?.RazonSocial ?? "-",
+            FechaAdquisicion = activo.FechaAdquisicion,
+            UbicacionActual = $"{activo.ZonaUbicacion.Almacen.Nombre} / {activo.ZonaUbicacion.CodigoUbicacion}",
+            CustodioActual = NombreUsr(activo.UsuarioResponsableId),
+            CostoAdquisicion = activo.CostoAdquisicion,
+            ValorResidual = activo.ValorResidual,
+            VidaUtilMeses = activo.VidaUtilMeses,
+            DepreciacionAcumulada = activo.DepreciacionAcumulada,
+            ValorNetoLibros = activo.ValorNetoLibros,
+            Estado = activo.Estado,
+            Depreciaciones = activo.Depreciaciones
+                .OrderByDescending(d => d.Anio).ThenByDescending(d => d.Mes)
+                .Select(d => new DepreciacionHistorialVM
+                {
+                    Anio = d.Anio,
+                    Mes = d.Mes,
+                    FechaRegistro = d.FechaRegistro,
+                    MontoDepreciado = d.MontoDepreciado,
+                    DepreciacionAcumuladaAlCierre = d.DepreciacionAcumuladaAlCierre,
+                    ValorNetoResultante = d.ValorNetoResultante
+                }).ToList(),
+            Transferencias = transferencias.Select(t => new TransferenciaHistorialActivoVM
+            {
+                Fecha = t.FechaTransferencia,
+                Origen = $"{t.ZonaOrigen.Almacen.Nombre} / {t.ZonaOrigen.CodigoUbicacion}",
+                Destino = $"{t.ZonaDestino.Almacen.Nombre} / {t.ZonaDestino.CodigoUbicacion}",
+                ResponsableAnterior = NombreUsr(t.ResponsableAnteriorId),
+                ResponsableNuevo = NombreUsr(t.ResponsableNuevoId),
+                Motivo = t.Motivo
+            }).ToList(),
+            Mantenimientos = mantenimientos.Select(m => new MantenimientoHistorialActivoVM
+            {
+                Fecha = m.Fecha,
+                Tipo = m.Tipo,
+                Proveedor = m.Proveedor?.RazonSocial ?? "-",
+                Descripcion = m.Descripcion,
+                Costo = m.Costo
+            }).ToList()
+        };
+    }
 }

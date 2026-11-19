@@ -109,4 +109,29 @@ public class AlmacenController : Controller
         TempData["Error"] = mensaje;
         return await Index();
     }
+
+    [HttpGet]
+    public async Task<IActionResult> ReporteInventarioPdf()
+    {
+        var almacenes = await _da.ObtenerAlmacenesAsync();
+        var zonas = await _da.ObtenerZonasAsync();
+        var existencias = await _da.ObtenerInventarioAsync();
+        var movimientos = await _da.ObtenerMovimientosAsync();
+        var picking = await _da.ObtenerOrdenesPickingAsync();
+        var vm = new AlmacenDashboardViewModel
+        {
+            Almacenes = almacenes.Select(x => new AlmacenItemViewModel(x.Id, x.Nombre, x.Tipo, x.Zonas.Count)).ToList(),
+            Zonas = zonas.Select(x => new ZonaItemViewModel(x.Id, x.AlmacenId, x.Almacen.Nombre, x.CodigoUbicacion)).ToList(),
+            Existencias = existencias.Select(x => new ExistenciaItemViewModel(x.LoteId, x.Lote.Articulo.Nombre,
+                x.Lote.NumeroLote, x.Lote.FechaVencimiento, x.Lote.EstadoCalidad, x.ZonaUbicacionId,
+                x.ZonaUbicacion.CodigoUbicacion, x.ZonaUbicacion.Almacen.Nombre, x.CantidadFisica,
+                x.CantidadReservada, x.CantidadFisica - x.CantidadReservada)).ToList(),
+            Movimientos = movimientos.Select(x => new MovimientoItemViewModel(x.Fecha, x.Lote.Articulo.Nombre,
+                x.Lote.NumeroLote, x.TipoMovimiento, x.Cantidad, x.ZonaOrigen?.CodigoUbicacion,
+                x.ZonaDestino?.CodigoUbicacion, x.ReferenciaDocumento)).ToList(),
+            OrdenesPicking = picking.Select(x => new PickingItemViewModel(x.Id, x.PedidoVentaId,
+                x.UsuarioOperarioId, x.Detalles.Count, x.Detalles.Sum(d => d.CantidadRecolectada))).ToList()
+        };
+        return View(vm);
+    }
 }

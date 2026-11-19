@@ -6,6 +6,9 @@ public class AsientoDiarioViewModel
     public string Fecha { get; set; } = null!;
     public string Glosa { get; set; } = null!;
     public string Referencia { get; set; } = null!;
+    public string ReferenciaModulo { get; set; } = "";
+    public int? ReferenciaId { get; set; }
+    public string Usuario { get; set; } = "";
     public List<DetalleAsientoViewModel> Detalles { get; set; } = new();
 }
 

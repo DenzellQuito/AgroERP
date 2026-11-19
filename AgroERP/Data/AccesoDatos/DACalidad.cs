@@ -77,6 +77,8 @@ public class DACalidad
 
         if (detalle == null) throw new Exception("Detalle no encontrado.");
         if (detalle.Lote.EstadoCalidad != "Cuarentena") throw new Exception("Este lote ya fue inspeccionado.");
+        if (esConforme && zonaId <= 0)
+            throw new Exception("Debe seleccionar una zona de ubicación para ingresar el lote liberado.");
 
         _db.InspeccionesCalidad.Add(new InspeccionCalidad
         {
@@ -114,17 +116,21 @@ public class DACalidad
             detalle.Lote.EstadoCalidad = "Rechazado";
         }
 
-        await _db.SaveChangesAsync();
-
         var recepcion = detalle.Recepcion;
-        var todosDetalles = await _db.DetallesRecepcion.Include(d => d.Lote).Where(d => d.RecepcionId == recepcion.Id).ToListAsync();
+        var otrosDetalles = await _db.DetallesRecepcion
+            .Include(d => d.Lote)
+            .Where(d => d.RecepcionId == recepcion.Id && d.Id != detalle.Id)
+            .ToListAsync();
 
-        if (!todosDetalles.Any(d => d.Lote.EstadoCalidad == "Cuarentena"))
+        if (!otrosDetalles.Any(d => d.Lote.EstadoCalidad == "Cuarentena"))
         {
             recepcion.Estado = "Cerrada";
-            bool parcial = todosDetalles.Any(d => d.Lote.EstadoCalidad == "Rechazado" || d.CantidadRecibida < d.CantidadPedida);
+            bool parcial = !esConforme
+                || detalle.CantidadRecibida < detalle.CantidadPedida
+                || otrosDetalles.Any(d => d.Lote.EstadoCalidad == "Rechazado" || d.CantidadRecibida < d.CantidadPedida);
             await _compras.MarcarOrdenRecepcionada(recepcion.OrdenCompraId, parcial);
-            await _db.SaveChangesAsync();
         }
+
+        await _db.SaveChangesAsync();
     }
 }

@@ -1,0 +1,107 @@
+@model AgroERP.ViewModels.Tesoreria.TesoreriaDashboardVM
+@{
+    Layout = "~/Views/Shared/_LayoutDocumentoPdf.cshtml";
+    ViewData["Title"] = "Reporte de Flujo de Caja, Liquidez y Libro Bancos";
+    ViewData["CodigoDocumento"] = $"TES-{DateTime.Now:yyyyMM}";
+    ViewData["SubtituloDocumento"] = $"Corte al {DateTime.Now:dd/MM/yyyy HH:mm} · Moneda: PEN";
+}
+
+<h6 class="fw-bold text-secondary text-uppercase small">1. Posición de Caja y Liquidez Proyectada</h6>
+<div class="row g-2 mb-4 text-center">
+    <div class="col-3">
+        <div class="border rounded p-2 bg-light">
+            <div class="small text-muted">Saldo Inicial Mes</div>
+            <div class="fw-bold">S/ @Model.SaldoInicialCaja.ToString("N2")</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="border rounded p-2 bg-light">
+            <div class="small text-muted">(+) Cobros Mes</div>
+            <div class="fw-bold text-success">S/ @Model.CobrosMes.ToString("N2")</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="border rounded p-2 bg-light">
+            <div class="small text-muted">(-) Pagos Mes</div>
+            <div class="fw-bold text-danger">S/ @Model.PagosMes.ToString("N2")</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="border rounded p-2 bg-dark text-white">
+            <div class="small opacity-75">(=) Saldo Final</div>
+            <div class="fw-bold text-info">S/ @Model.SaldoFinalDisponible.ToString("N2")</div>
+        </div>
+    </div>
+</div>
+
+<table class="table table-bordered table-sm mb-4">
+    <tbody>
+        <tr>
+            <td>(+) Cuentas por Cobrar Pendientes (Cartera Clientes)</td>
+            <td class="text-end text-success fw-semibold">+ S/ @Model.TotalPorCobrarPendiente.ToString("N2")</td>
+        </tr>
+        <tr>
+            <td>(-) Cuentas por Pagar Pendientes (Obligaciones Proveedores)</td>
+            <td class="text-end text-danger fw-semibold">- S/ @Model.TotalPorPagarPendiente.ToString("N2")</td>
+        </tr>
+        <tr class="table-light fw-bold">
+            <td>(=) Posición de Liquidez Proyectada (Caja + CxC - CxP)</td>
+            <td class="text-end text-primary">S/ @Model.LiquidezProyectada.ToString("N2")</td>
+        </tr>
+    </tbody>
+</table>
+
+<h6 class="fw-bold text-secondary text-uppercase small">2. Maestro de Cuentas Bancarias</h6>
+<table class="table table-bordered table-sm align-middle mb-4">
+    <thead class="table-light">
+        <tr>
+            <th>Banco</th>
+            <th>Cuenta</th>
+            <th>Titular</th>
+            <th class="text-end">Saldo Contable</th>
+            <th class="text-end">Saldo Disponible</th>
+            <th class="text-center">Estado</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var c in Model.Cuentas)
+        {
+            <tr>
+                <td class="fw-semibold">@c.Banco</td>
+                <td class="font-monospace">@c.NumeroCuenta</td>
+                <td>@c.Titular</td>
+                <td class="text-end">S/ @c.SaldoContable.ToString("N2")</td>
+                <td class="text-end fw-bold">S/ @c.SaldoDisponible.ToString("N2")</td>
+                <td class="text-center">@(c.Activa ? "Activa" : "Inactiva")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h6 class="fw-bold text-secondary text-uppercase small">3. Libro Bancos · Últimos Movimientos</h6>
+<table class="table table-bordered table-sm align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>Fecha</th>
+            <th>Cuenta</th>
+            <th>Tipo</th>
+            <th>N° Operación / Ref.</th>
+            <th class="text-end">Monto</th>
+            <th class="text-center">Conciliado</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var m in Model.UltimosMovimientos)
+        {
+            <tr>
+                <td>@m.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                <td>@m.CuentaBanco</td>
+                <td>@m.TipoMovimiento</td>
+                <td><span class="font-monospace">@m.NumeroOperacion</span> · @m.ReferenciaDocumento</td>
+                <td class="text-end fw-semibold">@(m.TipoMovimiento == "Ingreso" ? "+" : "-") S/ @m.Monto.ToString("N2")</td>
+                <td class="text-center">@(m.Conciliado ? "Sí" : "No")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+

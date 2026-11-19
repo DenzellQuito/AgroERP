@@ -1,0 +1,69 @@
+@model AgroERP.ViewModels.Distribucion.HojaPickingPdfVM
+@{
+    Layout = "~/Views/Shared/_LayoutDocumentoPdf.cshtml";
+    ViewData["Title"] = "Hoja de Picking y Packing";
+    ViewData["CodigoDocumento"] = $"PICK-{Model.OrdenPickingId:D4}";
+    ViewData["SubtituloDocumento"] = $"Pedido PED-{Model.PedidoVentaId:D4} · Estado: {Model.EstadoPedido}";
+}
+
+<div class="row mb-4">
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Datos del Pedido y Cliente</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>Cliente:</strong> @Model.Cliente</div>
+            <div><strong>RUC / DNI:</strong> @Model.ClienteRuc</div>
+            <div><strong>Pedido N°:</strong> PED-@Model.PedidoVentaId.ToString("D4")</div>
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <h6 class="fw-bold text-secondary text-uppercase small">Ejecución en Almacén (FEFO)</h6>
+        <div class="border rounded p-3 bg-light">
+            <div><strong>Operario Asignado:</strong> @Model.Operario</div>
+            <div><strong>Fecha de Pedido:</strong> @Model.FechaPedido.ToString("dd/MM/yyyy HH:mm")</div>
+            <div><strong>Promesa de Entrega:</strong> @Model.FechaPromesaEntrega.ToString("dd/MM/yyyy")</div>
+        </div>
+    </div>
+</div>
+
+<table class="table table-bordered align-middle mb-4">
+    <thead class="table-light">
+        <tr>
+            <th>Artículo</th>
+            <th>Lote (FEFO)</th>
+            <th>Vencimiento</th>
+            <th>Almacén / Ubicación</th>
+            <th class="text-end">Cantidad</th>
+            <th class="text-center">Check</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Items)
+        {
+            <tr>
+                <td class="fw-semibold">@item.Articulo <small class="text-muted">(@item.Unidad)</small></td>
+                <td class="font-monospace">@item.NumeroLote</td>
+                <td>@item.FechaVencimiento.ToString("dd/MM/yyyy")</td>
+                <td>@item.AlmacenZona</td>
+                <td class="text-end fw-bold">@item.Cantidad.ToString("N2")</td>
+                <td class="text-center">[ &nbsp; ]</td>
+            </tr>
+        }
+    </tbody>
+    <tfoot>
+        <tr class="table-light">
+            <th colspan="4" class="text-end">TOTAL UNIDADES RECOLECTADAS:</th>
+            <th class="text-end fw-bold">@Model.Items.Sum(x => x.Cantidad).ToString("N2")</th>
+            <th></th>
+        </tr>
+    </tfoot>
+</table>
+
+<div class="row mt-5 pt-4 text-center">
+    <div class="col-6">
+        <div class="border-top mx-4 pt-2 small text-muted">Operario de Picking (@Model.Operario)</div>
+    </div>
+    <div class="col-6">
+        <div class="border-top mx-4 pt-2 small text-muted">Responsable de Embalaje / Packing</div>
+    </div>
+</div>
+

@@ -42,6 +42,10 @@ public class DAPlanificacion
         var c = await _db.Set<CampaniaAgricola>().FindAsync(campaniaId)
                 ?? throw new InvalidOperationException("Campaña no encontrada.");
 
+        bool tieneReceta = await _db.Set<RecetaAgricolaBOM>().AnyAsync(r => r.MesAplicacion == c.MesProyectado);
+        if (!tieneReceta)
+            throw new InvalidOperationException($"No hay receta agrícola (BOM) cargada para el mes {c.MesProyectado}.");
+
         ForecastResponse? data;
         try
         {
